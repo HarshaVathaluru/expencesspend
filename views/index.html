@@ -1,0 +1,269 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="dark">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>PaisaPilot — Personal Expense Tracker &amp; 3D Money Intelligence</title>
+  <meta name="description" content="Track every rupee spent, reconcile PhonePe/UPI statements, visualize spending in 3D, and receive an 11:00 PM Brevo daily digest.">
+  <link rel="icon" href="/images/paisapilot-logo.svg" type="image/svg+xml">
+  <link rel="stylesheet" href="/css/app.css?v=2">
+</head>
+<body class="min-h-screen font-sans antialiased">
+  <a href="#main-content" class="sr-only focus:not-sr-only focus:fixed focus:top-3 focus:left-3 focus:z-50 pp-btn-primary">Skip to main content</a>
+
+  <!-- AUTH SHELL -->
+  <div id="auth-shell" class="hidden min-h-screen grid place-items-center p-4 sm:p-6">
+    <div class="pp-card w-full max-w-md p-6 sm:p-8 space-y-5">
+      <div class="flex items-center gap-3.5">
+        <img src="/images/paisapilot-logo.svg" alt="PaisaPilot" width="44" height="44" class="rounded-xl shrink-0">
+        <div>
+          <h1 class="text-xl font-bold tracking-tight">PaisaPilot</h1>
+          <p class="text-xs text-slate-400">Every rupee accounted for · 3D Money Intelligence</p>
+        </div>
+      </div>
+
+      <div class="pp-surface-sub grid grid-cols-3 gap-1 p-1" role="tablist">
+        <button type="button" class="tab-btn active rounded-lg py-2 text-xs font-semibold transition bg-sky-500/20 text-sky-400" data-auth-tab="login">Sign In</button>
+        <button type="button" class="tab-btn rounded-lg py-2 text-xs font-semibold transition text-slate-400" data-auth-tab="register">Create Account</button>
+        <button type="button" class="tab-btn rounded-lg py-2 text-xs font-semibold transition text-slate-400" data-auth-tab="reset">Reset</button>
+      </div>
+
+      <div id="auth-alert" class="hidden rounded-xl border px-3.5 py-2.5 text-xs font-medium" role="alert"></div>
+
+      <form id="form-login" class="space-y-3.5">
+        <label class="pp-label">Email
+          <input type="email" name="email" autocomplete="email" required placeholder="you@example.com" class="pp-input">
+        </label>
+        <label class="pp-label">Password
+          <input type="password" name="password" autocomplete="current-password" required placeholder="••••••••" class="pp-input">
+        </label>
+        <button type="submit" class="pp-btn-primary w-full">Sign In</button>
+      </form>
+
+      <form id="form-register" class="hidden space-y-3.5">
+        <label class="pp-label">Full Name
+          <input type="text" name="name" autocomplete="name" required placeholder="Aarav Sharma" class="pp-input">
+        </label>
+        <label class="pp-label">Email
+          <input type="email" name="email" autocomplete="email" required placeholder="you@example.com" class="pp-input">
+        </label>
+        <label class="pp-label">Password (min 8 chars)
+          <input type="password" name="password" autocomplete="new-password" minlength="8" required placeholder="At least 8 characters" class="pp-input">
+        </label>
+        <label class="pp-label">Default Timezone
+          <select name="timezone" class="pp-input">
+            <option value="Asia/Kolkata" selected>Asia/Kolkata (IST, UTC+5:30)</option>
+            <option value="UTC">UTC</option>
+            <option value="America/New_York">America/New_York</option>
+            <option value="Europe/London">Europe/London</option>
+            <option value="Asia/Singapore">Asia/Singapore</option>
+          </select>
+        </label>
+        <label class="flex items-center gap-2.5 text-xs text-slate-400 cursor-pointer pt-1">
+          <input type="checkbox" name="loadDemo" value="1" class="h-4 w-4 rounded accent-sky-400">
+          <span>Load removable demo transactions to explore charts &amp; 3D scenes</span>
+        </label>
+        <button type="submit" class="pp-btn-primary w-full">Create PaisaPilot Account</button>
+      </form>
+
+      <form id="form-reset" class="hidden space-y-3.5">
+        <label class="pp-label">Account Email
+          <input type="email" name="email" required placeholder="you@example.com" class="pp-input">
+        </label>
+        <button type="submit" class="pp-btn-secondary w-full">Request Reset Token</button>
+        <div id="reset-confirm-box" class="hidden space-y-3 pt-2 border-t border-slate-700/40">
+          <label class="pp-label">Reset Token
+            <input type="text" id="reset-token-input" placeholder="Paste reset token" class="pp-input">
+          </label>
+          <label class="pp-label">New Password (min 8 chars)
+            <input type="password" id="reset-new-password" minlength="8" placeholder="New password" class="pp-input">
+          </label>
+          <button type="button" id="btn-confirm-reset" class="pp-btn-primary w-full">Confirm Password Reset</button>
+        </div>
+      </form>
+
+      <p class="text-[11px] text-center text-slate-400">
+        Security first: PaisaPilot never asks for your UPI PIN, OTP, or banking password.
+      </p>
+    </div>
+  </div>
+
+  <!-- MAIN APPLICATION SHELL -->
+  <div id="app-shell" class="hidden min-h-screen lg:grid lg:grid-cols-[248px_1fr]">
+    <aside id="sidebar" class="fixed inset-y-0 left-0 z-40 w-64 -translate-x-full lg:translate-x-0 lg:sticky lg:top-0 lg:h-screen lg:w-auto flex flex-col p-4 border-r border-slate-500/15 bg-white/85 dark:bg-slate-950/85 backdrop-blur-xl transition-transform duration-200">
+      <div class="flex items-center justify-between gap-2 pb-4 border-b border-slate-500/15">
+        <div class="flex items-center gap-2.5">
+          <img src="/images/paisapilot-logo.svg" alt="PaisaPilot" width="32" height="32" class="rounded-lg">
+          <div>
+            <div class="font-bold text-sm tracking-tight">PaisaPilot</div>
+            <div class="text-[11px] text-slate-400" id="sidebar-tz">IST · INR</div>
+          </div>
+        </div>
+        <button type="button" class="lg:hidden pp-btn-ghost pp-btn-sm" id="btn-close-sidebar" aria-label="Close navigation">&times;</button>
+      </div>
+
+      <nav class="flex-1 overflow-y-auto py-3 space-y-1" aria-label="Primary">
+        <a href="/dashboard" class="pp-nav-item" data-route="dashboard"><span>Dashboard</span></a>
+        <a href="/transactions" class="pp-nav-item" data-route="transactions"><span>Transactions</span></a>
+        <a href="/import" class="pp-nav-item" data-route="import"><span>Import Center</span></a>
+        <a href="/sources" class="pp-nav-item" data-route="sources"><span>PhonePe &amp; Sources</span></a>
+        <a href="/reconciliation" class="pp-nav-item" data-route="reconciliation">
+          <span>Reconciliation</span>
+          <span class="hidden px-2 py-0.5 text-[11px] font-bold rounded-full bg-amber-400 text-slate-950" id="nav-review-badge">0</span>
+        </a>
+        <a href="/budgets" class="pp-nav-item" data-route="budgets"><span>Budgets</span></a>
+        <a href="/goals" class="pp-nav-item" data-route="goals"><span>Savings Goals</span></a>
+        <a href="/recurring" class="pp-nav-item" data-route="recurring"><span>Recurring Bills</span></a>
+        <a href="/insights" class="pp-nav-item" data-route="insights"><span>AI Insights</span></a>
+        <a href="/reports" class="pp-nav-item" data-route="reports"><span>Reports &amp; Exports</span></a>
+        <a href="/email-settings" class="pp-nav-item" data-route="email-settings"><span>11 PM Brevo Email</span></a>
+        <a href="/settings" class="pp-nav-item" data-route="settings"><span>Settings &amp; Privacy</span></a>
+      </nav>
+
+      <div class="pt-3 border-t border-slate-500/15 space-y-2.5">
+        <div class="text-[11px] font-medium text-center px-2.5 py-1.5 rounded-full bg-emerald-500/10 text-emerald-700 dark:text-emerald-400 border border-emerald-500/25" id="ai-status-pill">AI Engine: Checking...</div>
+        <div class="flex items-center justify-between gap-2">
+          <div class="min-w-0">
+            <div id="user-name-label" class="text-xs font-semibold truncate">User</div>
+            <div id="user-email-label" class="text-[11px] text-slate-400 truncate"></div>
+          </div>
+          <button type="button" class="pp-btn-ghost pp-btn-sm shrink-0" id="btn-logout">Sign out</button>
+        </div>
+      </div>
+    </aside>
+
+    <div class="flex flex-col min-w-0">
+      <header class="sticky top-0 z-30 flex items-center justify-between gap-3 px-4 sm:px-6 py-3.5 border-b border-slate-500/15 backdrop-blur-xl bg-white/75 dark:bg-slate-950/60">
+        <div class="flex items-center gap-3">
+          <button type="button" class="lg:hidden pp-btn-ghost pp-btn-sm" id="btn-open-sidebar" aria-label="Open navigation">☰</button>
+          <h2 id="page-title" class="text-lg font-bold tracking-tight">Dashboard</h2>
+        </div>
+        <div class="flex items-center gap-2">
+          <button type="button" class="pp-btn-ghost pp-btn-sm" id="btn-toggle-3d" title="Toggle 3D visualizations">3D: On</button>
+          <button type="button" class="pp-btn-ghost pp-btn-sm" id="btn-toggle-theme" title="Switch dark/light theme">Theme</button>
+          <button type="button" class="pp-btn-primary pp-btn-sm sm:px-4" id="btn-quick-add">+ Add Expense</button>
+        </div>
+      </header>
+
+      <div id="global-toast" class="hidden fixed right-5 bottom-5 z-50 px-4 py-2.5 rounded-xl bg-slate-900 text-slate-100 border border-sky-400/60 shadow-2xl text-xs font-medium" role="status" aria-live="polite"></div>
+
+      <main id="main-content" class="flex-1 w-full max-w-7xl mx-auto p-4 sm:p-6 pb-12" tabindex="-1">
+        <section id="view-dashboard" class="view-section hidden"></section>
+        <section id="view-transactions" class="view-section hidden"></section>
+        <section id="view-import" class="view-section hidden"></section>
+        <section id="view-sources" class="view-section hidden"></section>
+        <section id="view-reconciliation" class="view-section hidden"></section>
+        <section id="view-budgets" class="view-section hidden"></section>
+        <section id="view-goals" class="view-section hidden"></section>
+        <section id="view-recurring" class="view-section hidden"></section>
+        <section id="view-insights" class="view-section hidden"></section>
+        <section id="view-reports" class="view-section hidden"></section>
+        <section id="view-email-settings" class="view-section hidden"></section>
+        <section id="view-settings" class="view-section hidden"></section>
+      </main>
+    </div>
+  </div>
+
+  <!-- ADD / EDIT TRANSACTION MODAL -->
+  <dialog id="tx-modal" class="pp-dialog" aria-labelledby="tx-modal-title">
+    <form id="tx-form" class="p-5 sm:p-6 space-y-4">
+      <div class="flex items-center justify-between">
+        <h3 id="tx-modal-title" class="text-base font-bold">Add Transaction</h3>
+        <button type="button" class="pp-btn-ghost pp-btn-sm" id="btn-close-tx-modal" aria-label="Close">&times;</button>
+      </div>
+
+      <div class="flex gap-2 p-2 rounded-xl bg-sky-500/10 border border-sky-400/25">
+        <input type="text" id="ai-parse-input" class="pp-input" placeholder='AI Quick Parse: "Paid Rs 420 to Swiggy via PhonePe UPI"'>
+        <button type="button" class="pp-btn-secondary pp-btn-sm shrink-0" id="btn-ai-parse">Parse AI</button>
+      </div>
+
+      <input type="hidden" id="tx-id">
+      <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+        <label class="pp-label">Amount (INR)
+          <input type="number" step="0.01" min="0.01" id="tx-amount" required placeholder="420.00" class="pp-input">
+        </label>
+        <label class="pp-label">Type
+          <select id="tx-type" class="pp-input">
+            <option value="expense">Expense</option>
+            <option value="income">Income</option>
+            <option value="transfer">Self Transfer</option>
+            <option value="refund">Refund / Reversal</option>
+          </select>
+        </label>
+        <label class="pp-label">Merchant / Payee
+          <input type="text" id="tx-merchant" required placeholder="Swiggy, Blinkit, Metro..." class="pp-input">
+        </label>
+        <label class="pp-label">Date
+          <input type="date" id="tx-date" required class="pp-input">
+        </label>
+        <label class="pp-label">Category
+          <div class="flex gap-1.5">
+            <select id="tx-category" class="pp-input"></select>
+            <button type="button" class="pp-btn-ghost pp-btn-sm shrink-0" id="btn-ai-cat" title="Suggest with AI">AI</button>
+          </div>
+        </label>
+        <label class="pp-label">Payment Method
+          <select id="tx-method" class="pp-input">
+            <option value="PhonePe UPI">PhonePe UPI</option>
+            <option value="Other UPI">Other UPI</option>
+            <option value="Debit Card">Debit Card</option>
+            <option value="Credit Card">Credit Card</option>
+            <option value="Cash">Cash</option>
+            <option value="Bank Transfer">Bank Transfer</option>
+            <option value="Wallet">Wallet</option>
+            <option value="Other">Other</option>
+          </select>
+        </label>
+        <label class="pp-label">Reference / UTR (optional)
+          <input type="text" id="tx-ref" placeholder="Masked or short ref" class="pp-input">
+        </label>
+        <label class="pp-label">Reconciliation Status
+          <select id="tx-status" class="pp-input">
+            <option value="verified">Verified</option>
+            <option value="captured">Captured</option>
+            <option value="needs_review">Needs Review</option>
+            <option value="possible_duplicate">Possible Duplicate</option>
+          </select>
+        </label>
+      </div>
+
+      <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+        <label class="pp-label">Notes
+          <input type="text" id="tx-notes" placeholder="Optional note" class="pp-input">
+        </label>
+        <label class="pp-label">Tags (comma separated)
+          <input type="text" id="tx-tags" placeholder="dinner, office, upi" class="pp-input">
+        </label>
+      </div>
+
+      <div id="tx-split-section" class="p-3 rounded-xl border border-dashed border-slate-500/30 space-y-2">
+        <div class="flex items-center justify-between">
+          <span class="text-xs text-slate-400">Split across categories (optional)</span>
+          <button type="button" class="pp-btn-ghost pp-btn-sm" id="btn-add-split">+ Add Split</button>
+        </div>
+        <div id="tx-splits-list" class="space-y-2"></div>
+      </div>
+
+      <label class="hidden flex items-center gap-2 text-xs text-slate-600 dark:text-slate-300 cursor-pointer" id="tx-learn-rule-wrap">
+        <input type="checkbox" id="tx-learn-rule" class="h-4 w-4 rounded accent-sky-400">
+        <span>Always categorize this merchant under the selected category</span>
+      </label>
+
+      <div id="tx-receipt-box" class="hidden flex items-center justify-between gap-2 text-xs">
+        <span class="text-slate-400" id="tx-receipt-status">Attach receipt (PNG/JPG/PDF &le;5MB)</span>
+        <input type="file" id="tx-receipt-file" accept=".png,.jpg,.jpeg,.webp,.pdf" class="text-xs">
+      </div>
+
+      <div class="flex items-center justify-between pt-2 border-t border-slate-500/15">
+        <button type="button" class="hidden pp-btn-danger pp-btn-sm" id="btn-delete-tx">Delete</button>
+        <div class="flex items-center gap-2 ml-auto">
+          <button type="button" class="pp-btn-ghost pp-btn-sm" id="btn-cancel-tx">Cancel</button>
+          <button type="submit" class="pp-btn-primary pp-btn-sm" id="btn-save-tx">Save Transaction</button>
+        </div>
+      </div>
+    </form>
+  </dialog>
+
+  <script type="module" src="/js/app.js?v=2"></script>
+</body>
+</html>

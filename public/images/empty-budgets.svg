@@ -1,0 +1,13 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 240 160" fill="none" role="img" aria-label="No budgets configured">
+  <defs>
+    <linearGradient id="eb-ring" x1="76" y1="32" x2="164" y2="120" gradientUnits="userSpaceOnUse">
+      <stop offset="0%" stop-color="#818CF8"/>
+      <stop offset="100%" stop-color="#38BDF8"/>
+    </linearGradient>
+  </defs>
+  <ellipse cx="120" cy="138" rx="64" ry="9" fill="#020617" opacity="0.45"/>
+  <circle cx="120" cy="76" r="46" stroke="#1E293B" stroke-width="14"/>
+  <circle cx="120" cy="76" r="46" stroke="url(#eb-ring)" stroke-width="14" stroke-dasharray="190 120" stroke-linecap="round"/>
+  <circle cx="120" cy="76" r="26" fill="#0F172A" stroke="#334155" stroke-width="1.5"/>
+  <path d="M120 65v22M109 76h22" stroke="#38BDF8" stroke-width="3" stroke-linecap="round"/>
+</svg>

@@ -1,0 +1,10 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 52 52" fill="none" role="img" aria-label="health">
+  <defs>
+    <linearGradient id="g-health" x1="4" y1="4" x2="48" y2="48" gradientUnits="userSpaceOnUse">
+      <stop offset="0%" stop-color="#EF4444"/>
+      <stop offset="100%" stop-color="#B91C1C"/>
+    </linearGradient>
+  </defs>
+  <rect x="2" y="2" width="48" height="48" rx="14" fill="url(#g-health)" fill-opacity="0.22" stroke="url(#g-health)" stroke-width="1.6"/>
+  <path d="M26 36s-10-6.5-10-13.5A5.5 5.5 0 0 1 26 19a5.5 5.5 0 0 1 10 3.5C36 29.5 26 36 26 36Z" stroke="#FEF2F2" stroke-width="2.2" stroke-linejoin="round"/><path d="M26 22v6M23 25h6" stroke="#FECACA" stroke-width="2" stroke-linecap="round"/>
+</svg>

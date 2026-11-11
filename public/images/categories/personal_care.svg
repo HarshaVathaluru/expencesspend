@@ -1,0 +1,10 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 52 52" fill="none" role="img" aria-label="personal care">
+  <defs>
+    <linearGradient id="g-personal_care" x1="4" y1="4" x2="48" y2="48" gradientUnits="userSpaceOnUse">
+      <stop offset="0%" stop-color="#F472B6"/>
+      <stop offset="100%" stop-color="#DB2777"/>
+    </linearGradient>
+  </defs>
+  <rect x="2" y="2" width="48" height="48" rx="14" fill="url(#g-personal_care)" fill-opacity="0.22" stroke="url(#g-personal_care)" stroke-width="1.6"/>
+  <circle cx="26" cy="21" r="5" stroke="#FDF2F8" stroke-width="2.2"/><path d="M17 36c1.5-5 5-7 9-7s7.5 2 9 7" stroke="#FBCFE8" stroke-width="2.2" stroke-linecap="round"/>
+</svg>

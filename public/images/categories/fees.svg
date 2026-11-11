@@ -1,0 +1,10 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 52 52" fill="none" role="img" aria-label="fees">
+  <defs>
+    <linearGradient id="g-fees" x1="4" y1="4" x2="48" y2="48" gradientUnits="userSpaceOnUse">
+      <stop offset="0%" stop-color="#94A3B8"/>
+      <stop offset="100%" stop-color="#475569"/>
+    </linearGradient>
+  </defs>
+  <rect x="2" y="2" width="48" height="48" rx="14" fill="url(#g-fees)" fill-opacity="0.22" stroke="url(#g-fees)" stroke-width="1.6"/>
+  <rect x="16" y="15" width="20" height="22" rx="3" stroke="#F8FAFC" stroke-width="2.2"/><path d="M21 22h10M21 27h7M21 32h5" stroke="#CBD5E1" stroke-width="2.1" stroke-linecap="round"/>
+</svg>

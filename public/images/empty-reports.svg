@@ -1,0 +1,15 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 240 160" fill="none" role="img" aria-label="No reports generated yet">
+  <defs>
+    <linearGradient id="er-bar" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0%" stop-color="#34D399"/>
+      <stop offset="100%" stop-color="#0284C7"/>
+    </linearGradient>
+  </defs>
+  <ellipse cx="120" cy="138" rx="70" ry="9" fill="#020617" opacity="0.45"/>
+  <rect x="52" y="30" width="136" height="94" rx="14" fill="#0F172A" stroke="#334155" stroke-width="1.5"/>
+  <rect x="74" y="84" width="16" height="24" rx="4" fill="#1E293B"/>
+  <rect x="100" y="66" width="16" height="42" rx="4" fill="url(#er-bar)" opacity="0.7"/>
+  <rect x="126" y="54" width="16" height="54" rx="4" fill="url(#er-bar)"/>
+  <rect x="152" y="74" width="16" height="34" rx="4" fill="#1E293B"/>
+  <path d="M72 48h48" stroke="#475569" stroke-width="4" stroke-linecap="round"/>
+</svg>

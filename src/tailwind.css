@@ -1,0 +1,202 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  :root {
+    --pp-bg: #f1f5f9;
+    --pp-surface: #ffffff;
+    --pp-surface-2: #f8fafc;
+    --pp-border: rgba(15, 23, 42, 0.12);
+    --pp-text: #0f172a;
+    --pp-muted: #475569;
+    --accent: #0284c7;
+    --danger: #e11d48;
+    color-scheme: light;
+  }
+
+  [data-theme="dark"] {
+    --pp-bg: #060b16;
+    --pp-surface: rgba(17, 26, 46, 0.8);
+    --pp-surface-2: #0b1220;
+    --pp-border: rgba(148, 163, 184, 0.16);
+    --pp-text: #f1f5f9;
+    --pp-muted: #94a3b8;
+    --accent: #38bdf8;
+    --danger: #f87171;
+    color-scheme: dark;
+  }
+
+  html, body {
+    background-color: var(--pp-bg);
+    color: var(--pp-text);
+    -webkit-font-smoothing: antialiased;
+  }
+
+  [data-theme="dark"] body {
+    background-image:
+      radial-gradient(circle at 12% 8%, rgba(56, 189, 248, 0.11), transparent 36%),
+      radial-gradient(circle at 88% 85%, rgba(16, 185, 129, 0.09), transparent 38%);
+  }
+}
+
+@layer components {
+  .pp-card {
+    background: var(--pp-surface);
+    border: 1px solid var(--pp-border);
+    @apply rounded-2xl p-5 shadow-sm dark:shadow-lg backdrop-blur-md transition-colors duration-200;
+  }
+
+  .pp-surface-sub {
+    background: var(--pp-surface-2);
+    border: 1px solid var(--pp-border);
+    @apply rounded-xl;
+  }
+
+  .pp-input {
+    background: var(--pp-surface-2);
+    border: 1px solid var(--pp-border);
+    color: var(--pp-text);
+    @apply w-full min-h-[40px] rounded-xl px-3 py-2 text-sm outline-none transition focus:border-sky-500 dark:focus:border-sky-400 focus:ring-2 focus:ring-sky-400/20;
+  }
+
+  .pp-label {
+    @apply flex flex-col gap-1.5 text-xs font-medium tracking-wide;
+    color: var(--pp-muted);
+  }
+
+  .pp-btn {
+    @apply inline-flex items-center justify-center gap-2 min-h-[40px] px-4 py-2 rounded-xl text-sm font-semibold transition active:scale-[0.99] disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer;
+  }
+
+  .pp-btn-primary {
+    @apply pp-btn bg-gradient-to-r from-sky-500 to-emerald-500 dark:from-sky-400 dark:to-emerald-400 text-white dark:text-slate-950 hover:brightness-110 shadow-sm;
+  }
+
+  .pp-btn-secondary {
+    @apply pp-btn bg-sky-500/15 text-sky-700 dark:text-sky-300 border border-sky-500/35 hover:bg-sky-500/25;
+  }
+
+  .pp-btn-ghost {
+    border: 1px solid var(--pp-border);
+    color: var(--pp-text);
+    @apply pp-btn bg-transparent hover:bg-slate-500/10;
+  }
+
+  .pp-btn-danger {
+    @apply pp-btn bg-rose-500/15 text-rose-700 dark:text-rose-300 border border-rose-500/35 hover:bg-rose-500/25;
+  }
+
+  .pp-btn-sm {
+    @apply min-h-[34px] px-3 py-1.5 text-xs rounded-lg;
+  }
+
+  .pp-pill {
+    @apply inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-[11px] font-semibold border;
+  }
+
+  .pp-pill-verified {
+    @apply bg-emerald-500/15 text-emerald-700 dark:text-emerald-300 border-emerald-500/35;
+  }
+
+  .pp-pill-captured {
+    @apply bg-sky-500/15 text-sky-700 dark:text-sky-300 border-sky-500/35;
+  }
+
+  .pp-pill-needs_review {
+    @apply bg-amber-500/15 text-amber-700 dark:text-amber-300 border-amber-500/35;
+  }
+
+  .pp-pill-possible_duplicate {
+    @apply bg-rose-500/15 text-rose-700 dark:text-rose-300 border-rose-500/35;
+  }
+
+  .pp-pill-demo {
+    @apply bg-violet-500/15 text-violet-700 dark:text-violet-300 border-violet-500/35;
+  }
+
+  .pp-pill-neutral {
+    @apply bg-slate-500/15 text-slate-700 dark:text-slate-300 border-slate-500/30;
+  }
+
+  .pp-nav-item {
+    color: var(--pp-muted);
+    @apply flex items-center justify-between px-3 py-2.5 rounded-xl text-sm font-medium transition hover:bg-slate-500/10 hover:text-slate-900 dark:hover:text-slate-100;
+  }
+
+  .pp-nav-item.active {
+    @apply bg-gradient-to-r from-sky-500/15 to-emerald-500/10 text-sky-700 dark:text-sky-400 font-semibold;
+  }
+
+  .scene-stage {
+    background: radial-gradient(circle at 50% 42%, rgba(56, 189, 248, 0.16), rgba(11, 18, 32, 0.94) 72%);
+    border: 1px solid var(--pp-border);
+    @apply relative min-h-[280px] rounded-xl overflow-hidden text-slate-100;
+  }
+
+  .scene-hud-top {
+    border: 1px solid rgba(148, 163, 184, 0.2);
+    @apply absolute top-3 left-3.5 text-[11px] uppercase tracking-wider text-sky-300 bg-slate-950/75 px-2.5 py-1 rounded-full pointer-events-none;
+  }
+
+  .scene-hud {
+    border: 1px solid rgba(148, 163, 184, 0.2);
+    @apply absolute left-3.5 right-3.5 bottom-3 flex justify-between items-end gap-3 pointer-events-none bg-slate-950/75 backdrop-blur-md px-3.5 py-2.5 rounded-xl text-slate-100;
+  }
+}
+
+@layer utilities {
+  .hidden {
+    display: none !important;
+  }
+}
+
+.pp-dialog {
+  background: var(--pp-surface);
+  color: var(--pp-text);
+  border: 1px solid var(--pp-border);
+  width: min(620px, 95vw);
+  @apply rounded-2xl p-0 shadow-2xl opacity-0 translate-y-2 scale-[0.98] transition-all duration-200;
+}
+
+.pp-dialog[open] {
+  @apply opacity-100 translate-y-0 scale-100;
+}
+
+@starting-style {
+  .pp-dialog[open] {
+    opacity: 0;
+    transform: translateY(8px) scale(0.98);
+  }
+}
+
+.pp-dialog::backdrop {
+  background: rgba(2, 6, 23, 0.72);
+  backdrop-filter: blur(5px);
+}
+
+.skeleton {
+  background: linear-gradient(90deg, rgba(148, 163, 184, 0.08) 25%, rgba(148, 163, 184, 0.18) 50%, rgba(148, 163, 184, 0.08) 75%);
+  background-size: 200% 100%;
+  animation: ppShimmer 1.2s infinite;
+  @apply h-20 rounded-2xl;
+}
+
+@keyframes ppShimmer {
+  0% { background-position: 200% 0; }
+  100% { background-position: -200% 0; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+  }
+}
+
+[data-reduced-motion="true"] *, [data-reduced-motion="true"] *::before, [data-reduced-motion="true"] *::after {
+  animation-duration: 0.01ms !important;
+  animation-iteration-count: 1 !important;
+  transition-duration: 0.01ms !important;
+}

@@ -1,0 +1,10 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 52 52" fill="none" role="img" aria-label="education">
+  <defs>
+    <linearGradient id="g-education" x1="4" y1="4" x2="48" y2="48" gradientUnits="userSpaceOnUse">
+      <stop offset="0%" stop-color="#3B82F6"/>
+      <stop offset="100%" stop-color="#1D4ED8"/>
+    </linearGradient>
+  </defs>
+  <rect x="2" y="2" width="48" height="48" rx="14" fill="url(#g-education)" fill-opacity="0.22" stroke="url(#g-education)" stroke-width="1.6"/>
+  <path d="M14 22l12-6 12 6-12 6-12-6Z" stroke="#EFF6FF" stroke-width="2.2" stroke-linejoin="round"/><path d="M19 25v8c0 2.5 3.5 4 7 4s7-1.5 7-4v-8" stroke="#BFDBFE" stroke-width="2.2"/>
+</svg>

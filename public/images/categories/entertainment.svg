@@ -1,0 +1,10 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 52 52" fill="none" role="img" aria-label="entertainment">
+  <defs>
+    <linearGradient id="g-entertainment" x1="4" y1="4" x2="48" y2="48" gradientUnits="userSpaceOnUse">
+      <stop offset="0%" stop-color="#A855F7"/>
+      <stop offset="100%" stop-color="#7E22CE"/>
+    </linearGradient>
+  </defs>
+  <rect x="2" y="2" width="48" height="48" rx="14" fill="url(#g-entertainment)" fill-opacity="0.22" stroke="url(#g-entertainment)" stroke-width="1.6"/>
+  <rect x="14" y="16" width="24" height="18" rx="4" stroke="#FAF5FF" stroke-width="2.2"/><path d="M23 21l8 4-8 4v-8Z" fill="#E9D5FF"/>
+</svg>

@@ -1,0 +1,18 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" fill="none" role="img" aria-label="PaisaPilot Logo">
+  <defs>
+    <linearGradient id="pp-bg" x1="8" y1="6" x2="56" y2="58" gradientUnits="userSpaceOnUse">
+      <stop offset="0%" stop-color="#0EA5E9"/>
+      <stop offset="50%" stop-color="#10B981"/>
+      <stop offset="100%" stop-color="#6366F1"/>
+    </linearGradient>
+    <linearGradient id="pp-ring" x1="16" y1="16" x2="48" y2="48" gradientUnits="userSpaceOnUse">
+      <stop offset="0%" stop-color="#E0F2FE"/>
+      <stop offset="100%" stop-color="#A7F3D0"/>
+    </linearGradient>
+  </defs>
+  <rect x="4" y="4" width="56" height="56" rx="16" fill="#0B1220"/>
+  <rect x="5" y="5" width="54" height="54" rx="15" stroke="url(#pp-bg)" stroke-width="2" stroke-opacity="0.8"/>
+  <circle cx="32" cy="32" r="18" stroke="url(#pp-ring)" stroke-width="2.5" stroke-dasharray="84 22" stroke-linecap="round"/>
+  <path d="M24 22h14M24 28h14M29 22c3.8 0 6 2 6 5.2 0 3.3-2.5 5.3-6.5 5.3H25l9.5 11.5" stroke="#34D399" stroke-width="2.8" stroke-linecap="round" stroke-linejoin="round"/>
+  <circle cx="47" cy="17" r="4" fill="#38BDF8"/>
+</svg>

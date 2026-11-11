@@ -1,0 +1,10 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 52 52" fill="none" role="img" aria-label="family">
+  <defs>
+    <linearGradient id="g-family" x1="4" y1="4" x2="48" y2="48" gradientUnits="userSpaceOnUse">
+      <stop offset="0%" stop-color="#FB923C"/>
+      <stop offset="100%" stop-color="#EA580C"/>
+    </linearGradient>
+  </defs>
+  <rect x="2" y="2" width="48" height="48" rx="14" fill="url(#g-family)" fill-opacity="0.22" stroke="url(#g-family)" stroke-width="1.6"/>
+  <circle cx="21" cy="21" r="4" stroke="#FFF7ED" stroke-width="2.1"/><circle cx="31" cy="22" r="3.5" stroke="#FED7AA" stroke-width="2.1"/><path d="M15 35c1-4 3.5-6 6-6s5 2 6 6M27 35c.8-3 2.5-4.5 4.5-4.5S35 32 36 35" stroke="#FFF7ED" stroke-width="2.1" stroke-linecap="round"/>
+</svg>

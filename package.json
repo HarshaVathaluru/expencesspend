@@ -1,0 +1,45 @@
+{
+  "name": "paisapilot",
+  "version": "1.0.0",
+  "description": "PaisaPilot - Personal Expense Tracker, PhonePe/UPI Reconciliation, 3D Money Intelligence, Gemini AI & Brevo 11 PM Daily Digest",
+  "main": "server.js",
+  "scripts": {
+    "start": "node server.js",
+    "dev": "node --watch server.js",
+    "build:css": "tailwindcss -i ./src/tailwind.css -o ./public/css/app.css --minify",
+    "migrate": "node database/migrate.js",
+    "test": "node --test tests"
+  },
+  "keywords": [
+    "expense-tracker",
+    "personal-finance",
+    "upi",
+    "phonepe",
+    "brevo",
+    "gemini-ai",
+    "threejs"
+  ],
+  "license": "MIT",
+  "engines": {
+    "node": ">=20.0.0"
+  },
+  "dependencies": {
+    "bcryptjs": "^2.4.3",
+    "better-sqlite3": "^11.7.0",
+    "cookie-parser": "^1.4.7",
+    "dotenv": "^16.4.7",
+    "express": "^4.21.2",
+    "express-rate-limit": "^7.5.0",
+    "helmet": "^8.0.0",
+    "multer": "^1.4.5-lts.1",
+    "pdf-parse": "^1.1.1",
+    "pdfkit": "^0.16.0",
+    "pg": "^8.13.1",
+    "three": "^0.170.0",
+    "zod": "^3.24.1"
+  },
+  "devDependencies": {
+    "supertest": "^7.0.0",
+    "tailwindcss": "^3.4.17"
+  }
+}

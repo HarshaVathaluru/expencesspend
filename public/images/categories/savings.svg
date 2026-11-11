@@ -1,0 +1,10 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 52 52" fill="none" role="img" aria-label="savings">
+  <defs>
+    <linearGradient id="g-savings" x1="4" y1="4" x2="48" y2="48" gradientUnits="userSpaceOnUse">
+      <stop offset="0%" stop-color="#14B8A6"/>
+      <stop offset="100%" stop-color="#0F766E"/>
+    </linearGradient>
+  </defs>
+  <rect x="2" y="2" width="48" height="48" rx="14" fill="url(#g-savings)" fill-opacity="0.22" stroke="url(#g-savings)" stroke-width="1.6"/>
+  <circle cx="26" cy="26" r="11" stroke="#F0FDFA" stroke-width="2.2"/><path d="M22 21h8M22 25h8M25 21c2.5 0 3.8 1.2 3.8 3 0 2-1.5 3.2-4 3.2H22l5.5 6.8" stroke="#99F6E4" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+</svg>

@@ -1,0 +1,10 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 52 52" fill="none" role="img" aria-label="groceries">
+  <defs>
+    <linearGradient id="g-groceries" x1="4" y1="4" x2="48" y2="48" gradientUnits="userSpaceOnUse">
+      <stop offset="0%" stop-color="#10B981"/>
+      <stop offset="100%" stop-color="#047857"/>
+    </linearGradient>
+  </defs>
+  <rect x="2" y="2" width="48" height="48" rx="14" fill="url(#g-groceries)" fill-opacity="0.22" stroke="url(#g-groceries)" stroke-width="1.6"/>
+  <path d="M16 18h20l-2.5 13H18.5L16 18Z" stroke="#ECFDF5" stroke-width="2.2" stroke-linejoin="round"/><path d="M20 18l3-6h6l3 6" stroke="#A7F3D0" stroke-width="2.2" stroke-linecap="round"/><circle cx="21" cy="36" r="2" fill="#ECFDF5"/><circle cx="31" cy="36" r="2" fill="#ECFDF5"/>
+</svg>

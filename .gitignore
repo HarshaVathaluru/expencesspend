@@ -1,0 +1,13 @@
+node_modules/
+.env
+.env.local
+.env.*.local
+database/*.db
+database/*.db-wal
+database/*.db-shm
+uploads/
+logs/
+doc_extracted.txt
+*.log
+.DS_Store
+Thumbs.db
