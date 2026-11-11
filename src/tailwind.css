@@ -4,26 +4,28 @@
 
 @layer base {
   :root {
-    --pp-bg: #f1f5f9;
+    --pp-bg: #f4f3ee;
     --pp-surface: #ffffff;
-    --pp-surface-2: #f8fafc;
-    --pp-border: rgba(15, 23, 42, 0.12);
-    --pp-text: #0f172a;
-    --pp-muted: #475569;
-    --accent: #0284c7;
+    --pp-surface-2: #faf9f6;
+    --pp-border: rgba(15, 23, 42, 0.09);
+    --pp-text: #111827;
+    --pp-muted: #5b6472;
+    --accent: #0f766e;
     --danger: #e11d48;
+    --pp-shadow-card: 0 1px 2px rgba(15, 23, 42, 0.04), 0 8px 24px -10px rgba(15, 23, 42, 0.08);
     color-scheme: light;
   }
 
   [data-theme="dark"] {
-    --pp-bg: #060b16;
-    --pp-surface: rgba(17, 26, 46, 0.8);
-    --pp-surface-2: #0b1220;
-    --pp-border: rgba(148, 163, 184, 0.16);
-    --pp-text: #f1f5f9;
-    --pp-muted: #94a3b8;
-    --accent: #38bdf8;
+    --pp-bg: #090b0f;
+    --pp-surface: #11151d;
+    --pp-surface-2: #161b25;
+    --pp-border: rgba(255, 255, 255, 0.09);
+    --pp-text: #f3f4f6;
+    --pp-muted: #9ca3af;
+    --accent: #10b981;
     --danger: #f87171;
+    --pp-shadow-card: inset 0 1px 0 rgba(255, 255, 255, 0.05), 0 14px 32px -14px rgba(0, 0, 0, 0.65);
     color-scheme: dark;
   }
 
@@ -31,20 +33,44 @@
     background-color: var(--pp-bg);
     color: var(--pp-text);
     -webkit-font-smoothing: antialiased;
+    overflow-x: hidden;
+  }
+
+  body {
+    background-image: radial-gradient(rgba(15, 23, 42, 0.05) 1px, transparent 1px);
+    background-size: 24px 24px;
   }
 
   [data-theme="dark"] body {
     background-image:
-      radial-gradient(circle at 12% 8%, rgba(56, 189, 248, 0.11), transparent 36%),
-      radial-gradient(circle at 88% 85%, rgba(16, 185, 129, 0.09), transparent 38%);
+      radial-gradient(ellipse 75% 45% at 50% -8%, rgba(16, 185, 129, 0.09), transparent 70%),
+      radial-gradient(rgba(255, 255, 255, 0.035) 1px, transparent 1px);
+    background-size: 100% 100%, 24px 24px;
   }
 }
 
 @layer components {
+  .pp-num {
+    font-variant-numeric: tabular-nums;
+  }
+
   .pp-card {
     background: var(--pp-surface);
     border: 1px solid var(--pp-border);
-    @apply rounded-2xl p-5 shadow-sm dark:shadow-lg backdrop-blur-md transition-colors duration-200;
+    box-shadow: var(--pp-shadow-card);
+    @apply rounded-2xl p-4 sm:p-5 transition-all duration-300;
+  }
+
+  .pp-card-interactive {
+    transform-style: preserve-3d;
+    will-change: transform;
+  }
+
+  @media (hover: hover) {
+    .pp-card-interactive:hover {
+      transform: perspective(900px) translateY(-3px) rotateX(1.5deg);
+      border-color: rgba(16, 185, 129, 0.28);
+    }
   }
 
   .pp-surface-sub {
@@ -57,7 +83,7 @@
     background: var(--pp-surface-2);
     border: 1px solid var(--pp-border);
     color: var(--pp-text);
-    @apply w-full min-h-[40px] rounded-xl px-3 py-2 text-sm outline-none transition focus:border-sky-500 dark:focus:border-sky-400 focus:ring-2 focus:ring-sky-400/20;
+    @apply w-full min-h-[42px] rounded-xl px-3.5 py-2 text-sm outline-none transition focus:border-teal-600 dark:focus:border-emerald-400 focus:ring-2 focus:ring-emerald-500/20;
   }
 
   .pp-label {
@@ -66,15 +92,15 @@
   }
 
   .pp-btn {
-    @apply inline-flex items-center justify-center gap-2 min-h-[40px] px-4 py-2 rounded-xl text-sm font-semibold transition active:scale-[0.99] disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer;
+    @apply inline-flex items-center justify-center gap-2 min-h-[42px] px-4 py-2 rounded-xl text-sm font-semibold transition duration-200 active:scale-[0.98] disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer;
   }
 
   .pp-btn-primary {
-    @apply pp-btn bg-gradient-to-r from-sky-500 to-emerald-500 dark:from-sky-400 dark:to-emerald-400 text-white dark:text-slate-950 hover:brightness-110 shadow-sm;
+    @apply pp-btn bg-slate-900 text-white hover:bg-slate-800 dark:bg-emerald-500 dark:text-slate-950 dark:hover:bg-emerald-400 shadow-sm;
   }
 
   .pp-btn-secondary {
-    @apply pp-btn bg-sky-500/15 text-sky-700 dark:text-sky-300 border border-sky-500/35 hover:bg-sky-500/25;
+    @apply pp-btn bg-teal-600/10 text-teal-800 dark:bg-emerald-500/15 dark:text-emerald-300 border border-teal-600/25 dark:border-emerald-500/30 hover:bg-teal-600/15 dark:hover:bg-emerald-500/25;
   }
 
   .pp-btn-ghost {
@@ -84,11 +110,11 @@
   }
 
   .pp-btn-danger {
-    @apply pp-btn bg-rose-500/15 text-rose-700 dark:text-rose-300 border border-rose-500/35 hover:bg-rose-500/25;
+    @apply pp-btn bg-rose-500/15 text-rose-700 dark:bg-rose-500/15 dark:text-rose-300 border border-rose-500/30 hover:bg-rose-500/20;
   }
 
   .pp-btn-sm {
-    @apply min-h-[34px] px-3 py-1.5 text-xs rounded-lg;
+    @apply min-h-[36px] px-3 py-1.5 text-xs rounded-lg;
   }
 
   .pp-pill {
@@ -96,53 +122,146 @@
   }
 
   .pp-pill-verified {
-    @apply bg-emerald-500/15 text-emerald-700 dark:text-emerald-300 border-emerald-500/35;
+    @apply bg-emerald-500/15 text-emerald-700 dark:text-emerald-300 border-emerald-500/30;
   }
 
   .pp-pill-captured {
-    @apply bg-sky-500/15 text-sky-700 dark:text-sky-300 border-sky-500/35;
+    @apply bg-teal-500/15 text-teal-700 dark:text-teal-300 border-teal-500/30;
   }
 
   .pp-pill-needs_review {
-    @apply bg-amber-500/15 text-amber-700 dark:text-amber-300 border-amber-500/35;
+    @apply bg-amber-500/15 text-amber-700 dark:text-amber-300 border-amber-500/30;
   }
 
   .pp-pill-possible_duplicate {
-    @apply bg-rose-500/15 text-rose-700 dark:text-rose-300 border-rose-500/35;
+    @apply bg-rose-500/15 text-rose-700 dark:text-rose-300 border-rose-500/30;
   }
 
   .pp-pill-demo {
-    @apply bg-violet-500/15 text-violet-700 dark:text-violet-300 border-violet-500/35;
+    @apply bg-amber-500/15 text-amber-700 dark:text-amber-300 border-amber-500/30;
   }
 
   .pp-pill-neutral {
-    @apply bg-slate-500/15 text-slate-700 dark:text-slate-300 border-slate-500/30;
+    @apply bg-slate-500/15 text-slate-700 dark:text-slate-300 border-slate-500/25;
   }
 
   .pp-nav-item {
     color: var(--pp-muted);
-    @apply flex items-center justify-between px-3 py-2.5 rounded-xl text-sm font-medium transition hover:bg-slate-500/10 hover:text-slate-900 dark:hover:text-slate-100;
+    @apply flex items-center justify-between px-3.5 py-2.5 rounded-xl text-sm font-medium transition-all duration-200 hover:bg-slate-500/10 hover:text-slate-900 dark:hover:text-white hover:translate-x-0.5;
   }
 
   .pp-nav-item.active {
-    @apply bg-gradient-to-r from-sky-500/15 to-emerald-500/10 text-sky-700 dark:text-sky-400 font-semibold;
+    @apply bg-teal-600/10 text-teal-800 dark:bg-emerald-500/15 dark:text-emerald-300 font-semibold border border-teal-600/20 dark:border-emerald-500/25;
+  }
+
+  .pp-dock-item {
+    color: var(--pp-muted);
+    @apply flex flex-col items-center justify-center gap-0.5 min-h-[48px] px-2 py-1 rounded-xl text-[11px] font-medium transition-transform active:scale-95;
+  }
+
+  .pp-dock-item.active {
+    @apply text-teal-700 dark:text-emerald-400 font-semibold;
   }
 
   .scene-stage {
-    background: radial-gradient(circle at 50% 42%, rgba(56, 189, 248, 0.16), rgba(11, 18, 32, 0.94) 72%);
+    background: radial-gradient(circle at 50% 40%, rgba(16, 185, 129, 0.14), rgba(11, 15, 23, 0.96) 74%);
     border: 1px solid var(--pp-border);
-    @apply relative min-h-[280px] rounded-xl overflow-hidden text-slate-100;
+    @apply relative min-h-[250px] sm:min-h-[280px] rounded-xl overflow-hidden text-slate-100;
   }
 
   .scene-hud-top {
-    border: 1px solid rgba(148, 163, 184, 0.2);
-    @apply absolute top-3 left-3.5 text-[11px] uppercase tracking-wider text-sky-300 bg-slate-950/75 px-2.5 py-1 rounded-full pointer-events-none;
+    border: 1px solid rgba(148, 163, 184, 0.22);
+    @apply absolute top-3 left-3.5 text-[10px] uppercase tracking-wider text-emerald-300 bg-slate-950/75 px-2.5 py-1 rounded-full pointer-events-none;
   }
 
   .scene-hud {
     border: 1px solid rgba(148, 163, 184, 0.2);
-    @apply absolute left-3.5 right-3.5 bottom-3 flex justify-between items-end gap-3 pointer-events-none bg-slate-950/75 backdrop-blur-md px-3.5 py-2.5 rounded-xl text-slate-100;
+    @apply absolute left-3 right-3 bottom-3 flex justify-between items-end gap-3 pointer-events-none bg-slate-950/80 backdrop-blur-md px-3.5 py-2.5 rounded-xl text-slate-100;
   }
+}
+
+/* 3D Perspective Stage, Opening Launch Splash & Stagger Animations */
+.pp-stage-3d {
+  perspective: 1400px;
+  transform-style: preserve-3d;
+}
+
+.pp-view-enter {
+  animation: ppView3DIn 460ms cubic-bezier(0.22, 1, 0.36, 1) both;
+}
+
+.pp-stagger > * {
+  animation: ppCard3DRise 500ms cubic-bezier(0.22, 1, 0.36, 1) both;
+}
+.pp-stagger > *:nth-child(1) { animation-delay: 40ms; }
+.pp-stagger > *:nth-child(2) { animation-delay: 95ms; }
+.pp-stagger > *:nth-child(3) { animation-delay: 150ms; }
+.pp-stagger > *:nth-child(4) { animation-delay: 205ms; }
+.pp-stagger > *:nth-child(5) { animation-delay: 255ms; }
+
+@keyframes ppView3DIn {
+  0% {
+    opacity: 0;
+    transform: perspective(1200px) translate3d(0, 18px, -30px) rotateX(4.5deg) scale(0.985);
+  }
+  100% {
+    opacity: 1;
+    transform: perspective(1200px) translate3d(0, 0, 0) rotateX(0deg) scale(1);
+  }
+}
+
+@keyframes ppCard3DRise {
+  0% {
+    opacity: 0;
+    transform: perspective(1000px) translate3d(0, 16px, -24px) rotateX(6deg) scale(0.975);
+  }
+  100% {
+    opacity: 1;
+    transform: perspective(1000px) translate3d(0, 0, 0) rotateX(0deg) scale(1);
+  }
+}
+
+#pp-launch-splash {
+  background: var(--pp-bg);
+  transition: opacity 380ms cubic-bezier(0.22, 1, 0.36, 1), transform 420ms cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+#pp-launch-splash.is-leaving {
+  opacity: 0;
+  transform: perspective(1200px) translateZ(36px) scale(1.03);
+  pointer-events: none;
+}
+
+.pp-splash-emblem {
+  animation: ppSplashMark3D 680ms cubic-bezier(0.22, 1, 0.36, 1) both;
+}
+
+.pp-splash-bar {
+  animation: ppSplashProgress 720ms cubic-bezier(0.22, 1, 0.36, 1) forwards;
+}
+
+@keyframes ppSplashMark3D {
+  0% {
+    opacity: 0;
+    transform: perspective(900px) rotateX(24deg) rotateY(-14deg) translateZ(-50px) scale(0.86);
+  }
+  100% {
+    opacity: 1;
+    transform: perspective(900px) rotateX(0deg) rotateY(0deg) translateZ(0) scale(1);
+  }
+}
+
+@keyframes ppSplashProgress {
+  0% { transform: scaleX(0.08); opacity: 0.4; }
+  100% { transform: scaleX(1); opacity: 1; }
+}
+
+.no-scrollbar::-webkit-scrollbar {
+  display: none;
+}
+.no-scrollbar {
+  -ms-overflow-style: none;
+  scrollbar-width: none;
 }
 
 @layer utilities {

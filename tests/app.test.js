@@ -6,11 +6,13 @@ process.env.NODE_ENV = 'test';
 process.env.DATABASE_URL = 'sqlite::memory:';
 process.env.AUTH_SECRET = 'test-auth-secret-paisapilot-unit-tests-12345';
 process.env.BREVO_API_KEY = '';
+process.env.GEMINI_API_KEY = '';
 process.env.CRON_SECRET = 'test-cron-secret';
 
 const db = require('../lib/db');
 const { createApp } = require('../server');
-const { toPaise } = require('../lib/money');
+const { toPaise, getDatePartsInTz, shiftDate } = require('../lib/money');
+const { tickDailyScheduler } = require('../lib/scheduler');
 
 let app;
 let agentA;
@@ -195,4 +197,70 @@ test('7. Budgets, Goals, Recurring, AI Guardrail, Brevo Gate, and Exports', asyn
   const pdfOut = await agentA.get('/api/v1/reports/export/pdf?startDate=2026-11-01&endDate=2026-11-30');
   assert.equal(pdfOut.status, 200);
   assert.equal(pdfOut.headers['content-type'], 'application/pdf');
+});
+
+test('8. Payment image preview, 4-day summary cadence, and immediate budget exceeded alert', async () => {
+  // 8a. Image preview validates type and returns structured draft for receipt PNG
+  const badImg = await agentA
+    .post('/api/v1/ingestion/import/image-preview')
+    .attach('file', Buffer.from('not-an-image'), { filename: 'bad.txt', contentType: 'text/plain' });
+  assert.equal(badImg.status, 400);
+
+  const pngStub = Buffer.from('89504e470d0a1a0a0000000d4948445200000001000000010802000000907753de', 'hex');
+  const imgPrev = await agentA
+    .post('/api/v1/ingestion/import/image-preview')
+    .attach('file', pngStub, { filename: 'phonepe-receipt.png', contentType: 'image/png' });
+  assert.equal(imgPrev.status, 200);
+  assert.equal(imgPrev.body.filename, 'phonepe-receipt.png');
+  assert.ok(imgPrev.body.draft);
+
+  // 8b. 4-day email preview builds 4-day window
+  const prevRes = await agentA.get('/api/v1/email/preview?date=2026-11-10');
+  assert.equal(prevRes.status, 200);
+  assert.equal(prevRes.body.summary.windowDays, 4);
+  assert.equal(prevRes.body.summary.startDate, '2026-11-07');
+  assert.equal(prevRes.body.summary.endDate, '2026-11-10');
+  assert.ok(prevRes.body.subject.includes('4-Day Expenses'));
+
+  // 8c. Scheduler respects 4-day interval (skips if last sent < 4 days ago)
+  const me = await agentA.get('/api/v1/auth/me');
+  const userIdA = me.body.user.id;
+  const today = getDatePartsInTz(new Date(), 'Asia/Kolkata').localDate;
+  const twoDaysAgo = shiftDate(today, -2);
+  await db.run(
+    `UPDATE user_settings SET email_verified = 1, daily_email_enabled = 1, daily_email_time = '00:00' WHERE user_id = ?`,
+    [userIdA]
+  );
+  await db.run(
+    `INSERT INTO daily_reports (id, user_id, report_date, timezone, idempotency_key, summary_json, html_preview, status, created_at)
+     VALUES (?, ?, ?, 'Asia/Kolkata', ?, '{}', '', 'sent', ?)`,
+    ['rep_recent_2d', userIdA, twoDaysAgo, `${userIdA}:${twoDaysAgo}:daily_summary`, new Date().toISOString()]
+  );
+  await tickDailyScheduler();
+  const skippedReport = await db.get(
+    `SELECT id FROM daily_reports WHERE idempotency_key = ?`,
+    [`${userIdA}:${today}:daily_summary`]
+  );
+  assert.equal(skippedReport, null);
+
+  // 8d. Exceeding budget immediately attempts/logs a budget_exceeded email alert
+  const activeMonth = today.slice(0, 7);
+  await agentA.put('/api/v1/budgets').send({ monthKey: activeMonth, overallLimit: '500' });
+  const overTx = await agentA.post('/api/v1/transactions').send({
+    amount: '850.00',
+    type: 'expense',
+    localDate: today,
+    merchant: 'Over Budget Test Store',
+    categoryId: catFoodId,
+    paymentMethod: 'Other UPI'
+  });
+  assert.equal(overTx.status, 201);
+
+  const alertLog = await db.get(
+    `SELECT report_type, idempotency_key FROM email_delivery_logs WHERE user_id = ? AND report_type = 'budget_exceeded' ORDER BY created_at DESC LIMIT 1`,
+    [userIdA]
+  );
+  assert.ok(alertLog);
+  assert.equal(alertLog.report_type, 'budget_exceeded');
+  assert.equal(alertLog.idempotency_key, `${userIdA}:${activeMonth}:overall_budget_exceeded`);
 });

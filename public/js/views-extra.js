@@ -1,4 +1,4 @@
-import { api, state, esc, fmtINR, showToast, getTodayInUserTz } from './api.js?v=2';
+import { api, state, esc, fmtINR, showToast, getTodayInUserTz } from './api.js?v=7';
 
 function pillClass(status) {
   const s = String(status || '').toLowerCase();
@@ -9,33 +9,44 @@ function pillClass(status) {
   return 'pp-pill-neutral';
 }
 
-// 5. IMPORT CENTER
+// 5. IMPORT CENTER & PAYMENT IMAGE SCANNER
 export async function renderImportView(root, onRefreshAll) {
   root.innerHTML = `<div class="skeleton h-40"></div>`;
   const batchesRes = await api('/api/v1/ingestion/batches');
   let previewData = null;
+  let imageDraft = null;
+  let imageFile = null;
+  let imagePreviewUrl = null;
+
+  const revokePreview = () => {
+    if (imagePreviewUrl) {
+      URL.revokeObjectURL(imagePreviewUrl);
+      imagePreviewUrl = null;
+    }
+  };
 
   const render = () => {
+    const paymentMethods = ['PhonePe UPI', 'Other UPI', 'Debit Card', 'Credit Card', 'Cash', 'Bank Transfer', 'Wallet', 'Other'];
     root.innerHTML = `
       <div class="space-y-4">
         <div class="grid gap-4 lg:grid-cols-2">
           <div class="pp-card space-y-3 p-4">
             <div>
-              <h3 class="text-sm font-semibold">Import PhonePe / Bank Statement</h3>
-              <p class="mt-0.5 text-xs text-slate-400">Upload CSV or PDF statements. Column mapping &amp; duplicate checks run before saving.</p>
+              <h3 class="text-sm font-semibold">Upload Payment Image or Statement</h3>
+              <p class="mt-0.5 text-xs text-slate-400">Upload a payment screenshot/receipt (PNG, JPG, WEBP) to detect payment details, or a CSV/PDF statement.</p>
             </div>
             <div class="flex flex-wrap items-center gap-2">
-              <input type="file" id="imp-file" accept=".csv,.pdf" class="pp-input flex-1 text-xs">
-              <button type="button" class="pp-btn pp-btn-primary pp-btn-sm" id="btn-imp-upload">Preview File</button>
+              <input type="file" id="imp-file" accept=".png,.jpg,.jpeg,.webp,.csv,.pdf" class="pp-input flex-1 text-xs">
+              <button type="button" class="pp-btn pp-btn-primary pp-btn-sm" id="btn-imp-upload">Detect &amp; Preview</button>
             </div>
-            <label class="pp-label">Or Paste CSV Text
+            <label class="pp-label">Or Paste CSV Statement Text
               <textarea id="imp-csv-text" rows="3" class="pp-input mt-1 font-mono text-xs" placeholder="Date,Merchant,Amount,Type,Reference&#10;2026-11-10,Swiggy,380.00,Debit,UTR991203"></textarea>
             </label>
             <button type="button" class="pp-btn pp-btn-secondary pp-btn-sm" id="btn-imp-paste">Preview Pasted CSV</button>
           </div>
 
           <div class="pp-card space-y-3 p-4">
-            <h3 class="text-sm font-semibold">Recent Import Batches</h3>
+            <h3 class="text-sm font-semibold">Recent Statement Imports</h3>
             ${batchesRes.batches.length === 0 ? `
               <div class="flex flex-col items-center justify-center gap-2 py-6 text-center">
                 <img src="/images/empty-reports.svg" alt="" width="104">
@@ -63,6 +74,61 @@ export async function renderImportView(root, onRefreshAll) {
             `}
           </div>
         </div>
+
+        ${imageDraft ? `
+          <div class="pp-card space-y-4 p-4">
+            <div class="flex flex-wrap items-center justify-between gap-2">
+              <div>
+                <h3 class="text-sm font-semibold">Detected Payment Details</h3>
+                <p class="text-xs text-slate-400">${imageDraft.detected ? 'Payment details detected from image. Review or adjust before saving.' : 'Image attached. Enter or confirm payment details below.'}</p>
+              </div>
+              <span class="pp-pill ${imageDraft.detected ? 'pp-pill-verified' : 'pp-pill-needs_review'}">
+                ${imageDraft.detected ? 'Auto-Detected' : 'Manual Review'}
+              </span>
+            </div>
+            <div class="grid gap-4 md:grid-cols-[200px_1fr]">
+              <div class="rounded-xl border border-slate-500/20 bg-slate-950/30 p-2 flex items-center justify-center">
+                ${imagePreviewUrl ? `<img src="${imagePreviewUrl}" alt="Uploaded payment receipt" class="max-h-56 w-auto rounded-lg object-contain">` : ''}
+              </div>
+              <form id="form-img-tx" class="grid gap-3 sm:grid-cols-2">
+                <label class="pp-label">Amount (INR)
+                  <input type="number" step="0.01" min="0.01" name="amount" required value="${esc(imageDraft.amountRupees || '')}" class="pp-input mt-1">
+                </label>
+                <label class="pp-label">Merchant / Payee
+                  <input type="text" name="merchant" required value="${esc(imageDraft.merchant || '')}" placeholder="e.g. Swiggy, Zomato" class="pp-input mt-1">
+                </label>
+                <label class="pp-label">Type
+                  <select name="type" class="pp-input mt-1">
+                    ${['expense', 'income', 'transfer', 'refund'].map((tp) => `<option value="${tp}" ${imageDraft.type === tp ? 'selected' : ''}>${tp}</option>`).join('')}
+                  </select>
+                </label>
+                <label class="pp-label">Payment Method
+                  <select name="paymentMethod" class="pp-input mt-1">
+                    ${paymentMethods.map((m) => `<option value="${m}" ${imageDraft.paymentMethod === m ? 'selected' : ''}>${m}</option>`).join('')}
+                  </select>
+                </label>
+                <label class="pp-label">Category
+                  <select name="categoryId" class="pp-input mt-1">
+                    ${(state.categories || []).map((c) => `<option value="${c.id}" ${imageDraft.categoryId === c.id ? 'selected' : ''}>${esc(c.name)}</option>`).join('')}
+                  </select>
+                </label>
+                <label class="pp-label">Date
+                  <input type="date" name="localDate" required value="${esc(imageDraft.localDate || getTodayInUserTz())}" class="pp-input mt-1">
+                </label>
+                <label class="pp-label">Reference / UTR
+                  <input type="text" name="referenceId" value="${esc(imageDraft.reference || '')}" class="pp-input mt-1">
+                </label>
+                <label class="pp-label">Notes
+                  <input type="text" name="notes" value="${esc(imageDraft.notes || '')}" class="pp-input mt-1">
+                </label>
+                <div class="sm:col-span-2 flex justify-end gap-2 pt-1">
+                  <button type="button" class="pp-btn pp-btn-ghost pp-btn-sm" id="btn-img-cancel">Discard</button>
+                  <button type="submit" class="pp-btn pp-btn-primary pp-btn-sm">Save Detected Payment</button>
+                </div>
+              </form>
+            </div>
+          </div>
+        ` : ''}
 
         ${previewData ? `
           <div class="pp-card space-y-3 p-4">
@@ -97,24 +163,84 @@ export async function renderImportView(root, onRefreshAll) {
 
     root.querySelector('#btn-imp-upload')?.addEventListener('click', async () => {
       const f = root.querySelector('#imp-file')?.files?.[0];
-      if (!f) return showToast('Choose a CSV or PDF file first', true);
+      if (!f) return showToast('Choose an image, CSV, or PDF file first', true);
       const fd = new FormData();
       fd.append('file', f);
-      const isPdf = f.name.toLowerCase().endsWith('.pdf');
+      const lower = f.name.toLowerCase();
+      const isImg = f.type.startsWith('image/') || /\.(png|jpe?g|webp)$/.test(lower);
+      const isPdf = lower.endsWith('.pdf');
       try {
-        previewData = await api(isPdf ? '/api/v1/ingestion/import/pdf-preview' : '/api/v1/ingestion/import/csv-preview', { method: 'POST', body: fd });
-        previewData.sourceType = isPdf ? 'pdf' : 'csv';
-        render();
+        if (isImg) {
+          showToast('Detecting payment details from image...');
+          const res = await api('/api/v1/ingestion/import/image-preview', { method: 'POST', body: fd });
+          revokePreview();
+          imageFile = f;
+          imagePreviewUrl = URL.createObjectURL(f);
+          imageDraft = res.draft;
+          previewData = null;
+          render();
+        } else {
+          revokePreview();
+          imageDraft = null;
+          imageFile = null;
+          previewData = await api(isPdf ? '/api/v1/ingestion/import/pdf-preview' : '/api/v1/ingestion/import/csv-preview', { method: 'POST', body: fd });
+          previewData.sourceType = isPdf ? 'pdf' : 'csv';
+          render();
+        }
       } catch (e) { showToast(e.message, true); }
     });
 
     root.querySelector('#btn-imp-paste')?.addEventListener('click', async () => {
       const csvText = root.querySelector('#imp-csv-text').value;
       try {
+        revokePreview();
+        imageDraft = null;
+        imageFile = null;
         previewData = await api('/api/v1/ingestion/import/csv-preview', { method: 'POST', body: { csvText } });
         previewData.sourceType = 'csv';
         render();
       } catch (e) { showToast(e.message, true); }
+    });
+
+    root.querySelector('#btn-img-cancel')?.addEventListener('click', () => {
+      revokePreview();
+      imageDraft = null;
+      imageFile = null;
+      render();
+    });
+
+    root.querySelector('#form-img-tx')?.addEventListener('submit', async (e) => {
+      e.preventDefault();
+      const fd = new FormData(e.target);
+      try {
+        const res = await api('/api/v1/transactions', {
+          method: 'POST',
+          body: {
+            amount: fd.get('amount'),
+            merchant: fd.get('merchant'),
+            type: fd.get('type'),
+            paymentMethod: fd.get('paymentMethod'),
+            categoryId: fd.get('categoryId') || null,
+            localDate: fd.get('localDate'),
+            referenceId: fd.get('referenceId') || null,
+            notes: fd.get('notes') || '',
+            importSource: 'receipt_scan',
+            reconciliationStatus: 'verified'
+          }
+        });
+        const savedId = res.transaction?.id;
+        if (savedId && imageFile) {
+          const rfd = new FormData();
+          rfd.append('receipt', imageFile);
+          await api(`/api/v1/transactions/${savedId}/receipt`, { method: 'POST', body: rfd });
+        }
+        showToast('Detected payment saved to ledger');
+        revokePreview();
+        imageDraft = null;
+        imageFile = null;
+        if (onRefreshAll) onRefreshAll();
+        else renderImportView(root, onRefreshAll);
+      } catch (err) { showToast(err.message, true); }
     });
 
     root.querySelector('#btn-imp-commit')?.addEventListener('click', async () => {
@@ -135,287 +261,7 @@ export async function renderImportView(root, onRefreshAll) {
   render();
 }
 
-// 6. CONNECTED SOURCES & PHONEPE CAPTURE SETUP
-export async function renderSourcesView(root, onRefreshAll) {
-  root.innerHTML = `<div class="skeleton h-40"></div>`;
-  const [arch, stateRes] = await Promise.all([
-    api('/api/v1/ingestion/architecture'),
-    api('/api/v1/ingestion/connections')
-  ]);
-
-  root.innerHTML = `
-    <div class="space-y-4">
-      <div class="rounded-xl border border-sky-500/30 bg-sky-500/10 px-4 py-3 text-xs leading-relaxed">
-        <strong class="text-sky-700 dark:text-sky-400">Consented Capture Architecture:</strong> ${esc(arch.honestDisclosure)}
-      </div>
-
-      <div class="grid gap-4 lg:grid-cols-2">
-        <div class="pp-card space-y-3 p-4">
-          <h3 class="text-sm font-semibold">Connect Capture Source</h3>
-          <form id="form-new-source" class="space-y-3">
-            <label class="pp-label">Capture Adapter
-              <select name="provider" class="pp-input mt-1">
-                <option value="android_notification">Android Notification Listener (PhonePe / UPI Companion)</option>
-                <option value="sms_parser">Bank / UPI SMS Transaction Alert Parser</option>
-                <option value="email_receipt">Authorized Email Receipt Parser</option>
-                <option value="statement_import">Manual Statement CSV/PDF Workflow</option>
-              </select>
-            </label>
-            <label class="pp-label">Label
-              <input type="text" name="displayName" required class="pp-input mt-1" placeholder="My Pixel PhonePe Listener">
-            </label>
-            <label class="flex items-start gap-2 text-xs text-slate-600 dark:text-slate-300">
-              <input type="checkbox" name="consentGranted" required class="mt-0.5 rounded border-slate-600">
-              <span>I consent to parse only payment amount, merchant, and timestamp. I can pause or revoke anytime.</span>
-            </label>
-            <button type="submit" class="pp-btn pp-btn-primary pp-btn-sm">Enable Source &amp; Generate Token</button>
-          </form>
-          <div id="source-token-box" class="hidden rounded-xl border border-amber-500/40 bg-amber-500/10 p-3 text-xs"></div>
-        </div>
-
-        <div class="pp-card space-y-3 p-4">
-          <h3 class="text-sm font-semibold">Test Payment Alert / SMS Parser</h3>
-          <p class="text-xs text-slate-400">Simulate a PhonePe notification or bank SMS (OTPs are ignored automatically).</p>
-          <form id="form-test-ingest" class="space-y-3">
-            <label class="pp-label">Provider
-              <select name="provider" class="pp-input mt-1">
-                <option value="android_notification">Android Notification (PhonePe)</option>
-                <option value="sms_parser">Bank SMS Alert</option>
-              </select>
-            </label>
-            <label class="pp-label">Notification / SMS Text
-              <textarea name="rawText" rows="3" required class="pp-input mt-1 text-xs">Paid ₹349.00 to Zomato via PhonePe UPI. UTR 631290884122</textarea>
-            </label>
-            <button type="submit" class="pp-btn pp-btn-secondary pp-btn-sm">Process Event</button>
-          </form>
-        </div>
-      </div>
-
-      <div class="pp-card space-y-3 p-4">
-        <div class="flex flex-wrap items-center justify-between gap-2">
-          <h3 class="text-sm font-semibold">Connected Sources (${stateRes.connections.length})</h3>
-          <details class="text-xs text-slate-400">
-            <summary class="cursor-pointer font-medium text-sky-600 dark:text-sky-400 hover:underline">Android Webhook Payload Example</summary>
-            <pre class="mt-2 overflow-x-auto rounded-lg border border-slate-500/20 bg-slate-100 p-2.5 text-[11px] text-slate-800 dark:bg-slate-950/70 dark:text-slate-200">curl -X POST ${esc(window.location.origin)}/api/v1/ingestion/webhook \
-  -H "Content-Type: application/json" -H "X-Webhook-Token: YOUR_TOKEN" \
-  -d '{"packageName":"com.phonepe.app","rawText":"Paid ₹420.00 to Swiggy via PhonePe UPI. UTR 63129088","externalId":"PP-63129088"}'</pre>
-          </details>
-        </div>
-        ${stateRes.connections.length === 0 ? `
-          <div class="flex flex-col items-center justify-center gap-2 py-6 text-center">
-            <img src="/images/empty-sources.svg" alt="" width="112">
-            <div class="text-xs text-slate-400">No active capture adapters yet. Enable one above or upload statements in Import Center.</div>
-          </div>
-        ` : `
-          <div class="overflow-x-auto">
-            <table class="w-full text-left text-xs">
-              <thead class="border-b border-slate-500/20 text-[11px] uppercase tracking-wide text-slate-400">
-                <tr><th class="py-2 pr-3">Source</th><th class="py-2 pr-3">Adapter</th><th class="py-2 pr-3">Status</th><th class="py-2 pr-3">Last Sync</th><th class="py-2 pr-3">Pending</th><th class="py-2">Actions</th></tr>
-              </thead>
-              <tbody class="divide-y divide-slate-500/15">
-                ${stateRes.connections.map((c) => `
-                  <tr>
-                    <td class="py-2 pr-3 font-semibold">${esc(c.display_name)}</td>
-                    <td class="py-2 pr-3 text-slate-400">${esc(c.provider)}</td>
-                    <td class="py-2 pr-3"><span class="pp-pill ${pillClass(c.status)}">${esc(c.status)}</span></td>
-                    <td class="py-2 pr-3 text-slate-400">${c.last_sync_at ? esc(c.last_sync_at.slice(0, 19).replace('T', ' ')) : 'Never'}</td>
-                    <td class="py-2 pr-3">${c.pending_count}</td>
-                    <td class="py-2">
-                      <div class="flex flex-wrap gap-1.5">
-                        <button type="button" class="pp-btn pp-btn-ghost pp-btn-sm" data-src-act="test" data-id="${c.id}">Test</button>
-                        <button type="button" class="pp-btn pp-btn-ghost pp-btn-sm" data-src-act="${c.status === 'active' ? 'paused' : 'active'}" data-id="${c.id}">${c.status === 'active' ? 'Pause' : 'Resume'}</button>
-                        <button type="button" class="pp-btn pp-btn-danger pp-btn-sm" data-src-act="delete" data-id="${c.id}">Revoke</button>
-                      </div>
-                    </td>
-                  </tr>
-                `).join('')}
-              </tbody>
-            </table>
-          </div>
-        `}
-      </div>
-
-      <div class="pp-card space-y-3 p-4">
-        <h3 class="text-sm font-semibold">Recent Ingestion Events</h3>
-        <div class="overflow-x-auto">
-          <table class="w-full text-left text-xs">
-            <thead class="border-b border-slate-500/20 text-[11px] uppercase tracking-wide text-slate-400">
-              <tr><th class="py-2 pr-3">Time</th><th class="py-2 pr-3">Provider</th><th class="py-2 pr-3">Summary</th><th class="py-2 pr-3">Confidence</th><th class="py-2">Status</th></tr>
-            </thead>
-            <tbody class="divide-y divide-slate-500/15">
-              ${stateRes.recentEvents.length === 0 ? `<tr><td colspan="5" class="py-3 text-slate-400">No events captured yet.</td></tr>` : stateRes.recentEvents.map((ev) => `
-                <tr>
-                  <td class="py-2 pr-3 text-slate-400">${esc(ev.created_at.slice(0, 19).replace('T', ' '))}</td>
-                  <td class="py-2 pr-3">${esc(ev.provider)}</td>
-                  <td class="py-2 pr-3">${esc(ev.payload_summary)}</td>
-                  <td class="py-2 pr-3">${esc(ev.confidence)}</td>
-                  <td class="py-2"><span class="pp-pill ${pillClass(ev.status)}">${esc(ev.status)}</span></td>
-                </tr>
-              `).join('')}
-            </tbody>
-          </table>
-        </div>
-      </div>
-    </div>
-  `;
-
-  root.querySelector('#form-new-source')?.addEventListener('submit', async (e) => {
-    e.preventDefault();
-    const fd = new FormData(e.target);
-    try {
-      const res = await api('/api/v1/ingestion/connections', {
-        method: 'POST',
-        body: { provider: fd.get('provider'), displayName: fd.get('displayName'), consentGranted: true }
-      });
-      const box = root.querySelector('#source-token-box');
-      box.innerHTML = `<strong>Copy webhook token now (shown once):</strong><div class="mt-1 break-all font-mono text-amber-800 dark:text-amber-200">${esc(res.webhookTokenOnce)}</div><div class="mt-1 text-[11px] text-slate-600 dark:text-slate-300">POST to <code>/api/v1/ingestion/webhook</code> with header <code>X-Webhook-Token</code>.</div>`;
-      box.classList.remove('hidden');
-      showToast('Capture source connected');
-    } catch (err) { showToast(err.message, true); }
-  });
-
-  root.querySelector('#form-test-ingest')?.addEventListener('submit', async (e) => {
-    e.preventDefault();
-    const fd = new FormData(e.target);
-    try {
-      const res = await api('/api/v1/ingestion/events', {
-        method: 'POST',
-        body: { provider: fd.get('provider'), rawText: fd.get('rawText') }
-      });
-      showToast(`Event ${res.status}: ${res.transaction ? res.transaction.merchant + ' ' + fmtINR(res.transaction.amount_paise) : res.reason || 'Recorded'}`);
-      if (onRefreshAll) onRefreshAll();
-      renderSourcesView(root, onRefreshAll);
-    } catch (err) { showToast(err.message, true); }
-  });
-
-  root.querySelectorAll('[data-src-act]').forEach((btn) => {
-    btn.addEventListener('click', async () => {
-      const id = btn.dataset.id;
-      const act = btn.dataset.srcAct;
-      try {
-        if (act === 'delete') {
-          if (!confirm('Revoke this capture source?')) return;
-          await api(`/api/v1/ingestion/connections/${id}`, { method: 'DELETE' });
-        } else if (act === 'test') {
-          const r = await api(`/api/v1/ingestion/connections/${id}`, { method: 'PATCH', body: { action: 'test' } });
-          showToast(r.message);
-        } else {
-          await api(`/api/v1/ingestion/connections/${id}`, { method: 'PATCH', body: { status: act } });
-        }
-        renderSourcesView(root, onRefreshAll);
-      } catch (err) { showToast(err.message, true); }
-    });
-  });
-}
-
-// 7. RECONCILIATION CENTER
-export async function renderReconciliationView(root, onRefreshAll) {
-  root.innerHTML = `<div class="skeleton h-40"></div>`;
-  const monthKey = state.monthKey || getTodayInUserTz().slice(0, 7);
-  const rec = await api(`/api/v1/reconciliation?monthKey=${encodeURIComponent(monthKey)}`);
-
-  root.innerHTML = `
-    <div class="space-y-4">
-      <div class="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
-        <div class="pp-card p-4"><div class="text-xs text-slate-400">Verified</div><div class="mt-1 text-2xl font-bold text-emerald-400">${rec.verifiedCount}</div><div class="mt-0.5 text-[11px] text-slate-400">Confirmed entries</div></div>
-        <div class="pp-card p-4"><div class="text-xs text-slate-400">Captured</div><div class="mt-1 text-2xl font-bold text-sky-400">${rec.capturedCount}</div><div class="mt-0.5 text-[11px] text-slate-400">Notifications / imports</div></div>
-        <div class="pp-card p-4"><div class="text-xs text-slate-400">Needs Review</div><div class="mt-1 text-2xl font-bold text-amber-400">${rec.needsReviewCount + rec.pendingIngestionEventsCount}</div><div class="mt-0.5 text-[11px] text-slate-400">Ambiguous or unparsed</div></div>
-        <div class="pp-card p-4"><div class="text-xs text-slate-400">Possible Duplicates</div><div class="mt-1 text-2xl font-bold text-rose-400">${rec.possibleDuplicatesCount}</div><div class="mt-0.5 text-[11px] text-slate-400">Flagged, never auto-deleted</div></div>
-      </div>
-
-      <div class="grid gap-4 lg:grid-cols-2">
-        <div class="pp-card space-y-3 p-4">
-          <h3 class="text-sm font-semibold">Unparsed Event Queue (${rec.pendingEvents.length})</h3>
-          ${rec.pendingEvents.length === 0 ? `<div class="text-xs text-slate-400">All captured events parsed cleanly.</div>` : rec.pendingEvents.map((ev) => `
-            <div class="pp-surface-sub space-y-2 p-3">
-              <div class="text-[11px] text-slate-400">${esc(ev.provider)} · ${esc(ev.created_at.slice(0, 10))}</div>
-              <div class="text-xs">${esc(ev.payload_summary)}</div>
-              <form class="resolve-ev-form flex flex-wrap gap-2" data-ev-id="${ev.id}">
-                <input type="text" name="merchant" placeholder="Merchant" required class="pp-input flex-1 text-xs">
-                <input type="number" step="0.01" name="amount" placeholder="Amount ₹" required class="pp-input w-28 text-xs">
-                <button type="submit" class="pp-btn pp-btn-primary pp-btn-sm">Confirm</button>
-                <button type="button" class="pp-btn pp-btn-ghost pp-btn-sm" data-dismiss-ev="${ev.id}">Dismiss</button>
-              </form>
-            </div>
-          `).join('')}
-        </div>
-
-        <div class="pp-card space-y-3 p-4">
-          <h3 class="text-sm font-semibold">Flagged Transactions &amp; Unverified Days</h3>
-          ${[...rec.possibleDuplicates, ...rec.needsReview].length === 0 ? `<div class="text-xs text-slate-400">Zero flagged transactions for ${esc(rec.monthKey)}.</div>` : `
-            <div class="divide-y divide-slate-500/15">
-              ${[...rec.possibleDuplicates, ...rec.needsReview].map((t) => `
-                <div class="flex flex-wrap items-center justify-between gap-2 py-2.5">
-                  <div>
-                    <div class="text-xs font-semibold">${esc(t.merchant)} <span class="font-normal text-slate-400">(${esc(t.local_date)})</span></div>
-                    <div class="mt-0.5 flex items-center gap-2 text-xs text-slate-400">${fmtINR(t.amount_paise)} <span class="pp-pill ${pillClass(t.reconciliation_status)}">${esc(t.reconciliation_status)}</span></div>
-                  </div>
-                  <div class="flex gap-1.5">
-                    <button type="button" class="pp-btn pp-btn-secondary pp-btn-sm" data-verify-tx="${t.id}">Verify</button>
-                    <button type="button" class="pp-btn pp-btn-danger pp-btn-sm" data-del-tx="${t.id}">Delete</button>
-                  </div>
-                </div>
-              `).join('')}
-            </div>
-          `}
-
-          <div class="border-t border-slate-500/15 pt-3">
-            <h4 class="text-xs font-semibold uppercase tracking-wide text-slate-400">Unverified Days (${rec.unverifiedDays.length})</h4>
-            ${rec.unverifiedDays.length === 0 ? `<div class="mt-1.5 text-xs text-slate-400">Every recorded day is 100% verified.</div>` : `
-              <div class="mt-2 space-y-1">
-                ${rec.unverifiedDays.map((d) => `<div class="flex justify-between text-xs"><span>${esc(d.date)}</span><span class="text-slate-400">${d.verified}/${d.total} verified</span></div>`).join('')}
-              </div>
-            `}
-          </div>
-        </div>
-      </div>
-    </div>
-  `;
-
-  root.querySelectorAll('.resolve-ev-form').forEach((f) => {
-    f.addEventListener('submit', async (e) => {
-      e.preventDefault();
-      const fd = new FormData(f);
-      try {
-        await api(`/api/v1/reconciliation/resolve-event/${f.dataset.evId}`, {
-          method: 'POST',
-          body: { merchant: fd.get('merchant'), amount: fd.get('amount') }
-        });
-        showToast('Event verified into ledger');
-        if (onRefreshAll) onRefreshAll();
-        renderReconciliationView(root, onRefreshAll);
-      } catch (err) { showToast(err.message, true); }
-    });
-  });
-
-  root.querySelectorAll('[data-dismiss-ev]').forEach((b) => {
-    b.addEventListener('click', async () => {
-      await api(`/api/v1/reconciliation/resolve-event/${b.dataset.dismissEv}`, { method: 'POST', body: { action: 'dismiss' } });
-      renderReconciliationView(root, onRefreshAll);
-    });
-  });
-
-  root.querySelectorAll('[data-verify-tx]').forEach((b) => {
-    b.addEventListener('click', async () => {
-      await api(`/api/v1/transactions/${b.dataset.verifyTx}`, { method: 'PUT', body: { reconciliationStatus: 'verified' } });
-      showToast('Marked verified');
-      if (onRefreshAll) onRefreshAll();
-      renderReconciliationView(root, onRefreshAll);
-    });
-  });
-
-  root.querySelectorAll('[data-del-tx]').forEach((b) => {
-    b.addEventListener('click', async () => {
-      if (!confirm('Delete this flagged duplicate?')) return;
-      await api(`/api/v1/transactions/${b.dataset.delTx}`, { method: 'DELETE' });
-      showToast('Transaction deleted');
-      if (onRefreshAll) onRefreshAll();
-      renderReconciliationView(root, onRefreshAll);
-    });
-  });
-}
-
-// 8. BUDGETS
+// 7. BUDGETS
 export async function renderBudgetsView(root) {
   root.innerHTML = `<div class="skeleton h-40"></div>`;
   const monthKey = state.monthKey || getTodayInUserTz().slice(0, 7);
@@ -582,161 +428,6 @@ export async function renderGoalsView(root) {
   });
 }
 
-// 10. RECURRING PAYMENTS
-export async function renderRecurringView(root, onRefreshAll) {
-  root.innerHTML = `<div class="skeleton h-40"></div>`;
-  const { recurring } = await api('/api/v1/recurring');
-  root.innerHTML = `
-    <div class="space-y-4">
-      <div class="pp-card space-y-3 p-4">
-        <h3 class="text-sm font-semibold">Add Recurring Bill / Subscription</h3>
-        <form id="form-rec" class="grid gap-3 sm:grid-cols-2 lg:grid-cols-6">
-          <label class="pp-label">Title <input type="text" name="title" required placeholder="House Rent" class="pp-input mt-1"></label>
-          <label class="pp-label">Merchant <input type="text" name="merchant" required placeholder="Landlord UPI" class="pp-input mt-1"></label>
-          <label class="pp-label">Amount (INR) <input type="number" step="0.01" name="amount" required placeholder="18500" class="pp-input mt-1"></label>
-          <label class="pp-label">Cadence
-            <select name="cadence" class="pp-input mt-1">
-              <option value="monthly">Monthly</option>
-              <option value="weekly">Weekly</option>
-              <option value="yearly">Yearly</option>
-              <option value="daily">Daily</option>
-            </select>
-          </label>
-          <label class="pp-label">Next Due <input type="date" name="nextDueDate" value="${getTodayInUserTz()}" required class="pp-input mt-1"></label>
-          <label class="pp-label">Category
-            <select name="categoryId" class="pp-input mt-1">${state.categories.map((c) => `<option value="${c.id}">${esc(c.name)}</option>`).join('')}</select>
-          </label>
-          <div class="sm:col-span-2 lg:col-span-6">
-            <button type="submit" class="pp-btn pp-btn-primary pp-btn-sm">Save Recurring Schedule</button>
-          </div>
-        </form>
-      </div>
-
-      <div class="pp-card space-y-3 p-4">
-        <h3 class="text-sm font-semibold">Scheduled Recurring Rules</h3>
-        <div class="overflow-x-auto">
-          <table class="w-full text-left text-xs">
-            <thead class="border-b border-slate-500/20 text-[11px] uppercase tracking-wide text-slate-400">
-              <tr><th class="py-2 pr-3">Title</th><th class="py-2 pr-3">Amount</th><th class="py-2 pr-3">Cadence</th><th class="py-2 pr-3">Next Due</th><th class="py-2 pr-3">Last Recorded</th><th class="py-2">Actions</th></tr>
-            </thead>
-            <tbody class="divide-y divide-slate-500/15">
-              ${recurring.length === 0 ? `<tr><td colspan="6" class="py-3 text-slate-400">No recurring schedules configured.</td></tr>` : recurring.map((r) => `
-                <tr>
-                  <td class="py-2 pr-3 font-semibold">${esc(r.title)} <span class="font-normal text-slate-400">(${esc(r.merchant)})</span></td>
-                  <td class="py-2 pr-3">${fmtINR(r.amount_paise)}</td>
-                  <td class="py-2 pr-3 capitalize">${esc(r.cadence)}</td>
-                  <td class="py-2 pr-3">${esc(r.next_due_date)}</td>
-                  <td class="py-2 pr-3 text-slate-400">${esc(r.last_matched_date || 'Predicted')}</td>
-                  <td class="py-2">
-                    <div class="flex gap-1.5">
-                      <button type="button" class="pp-btn pp-btn-secondary pp-btn-sm" data-rec-pay="${r.id}">Record Actual</button>
-                      <button type="button" class="pp-btn pp-btn-danger pp-btn-sm" data-rec-del="${r.id}">Delete</button>
-                    </div>
-                  </td>
-                </tr>
-              `).join('')}
-            </tbody>
-          </table>
-        </div>
-      </div>
-    </div>
-  `;
-
-  root.querySelector('#form-rec').addEventListener('submit', async (e) => {
-    e.preventDefault();
-    const fd = new FormData(e.target);
-    await api('/api/v1/recurring', { method: 'POST', body: Object.fromEntries(fd.entries()) });
-    showToast('Recurring rule added');
-    renderRecurringView(root, onRefreshAll);
-  });
-
-  root.querySelectorAll('[data-rec-pay]').forEach((b) => {
-    b.addEventListener('click', async () => {
-      const r = await api(`/api/v1/recurring/${b.dataset.recPay}/record`, { method: 'POST' });
-      showToast(`Recorded actual transaction. Next due: ${r.nextDueDate}`);
-      if (onRefreshAll) onRefreshAll();
-      renderRecurringView(root, onRefreshAll);
-    });
-  });
-
-  root.querySelectorAll('[data-rec-del]').forEach((b) => {
-    b.addEventListener('click', async () => {
-      await api(`/api/v1/recurring/${b.dataset.recDel}`, { method: 'DELETE' });
-      renderRecurringView(root, onRefreshAll);
-    });
-  });
-}
-
-// 11. INSIGHTS & GEMINI AI ASSISTANT
-export async function renderInsightsView(root) {
-  root.innerHTML = `<div class="skeleton h-40"></div>`;
-  const monthKey = state.monthKey || getTodayInUserTz().slice(0, 7);
-  const data = await api(`/api/v1/insights?monthKey=${encodeURIComponent(monthKey)}`);
-
-  root.innerHTML = `
-    <div class="space-y-4">
-      <div class="pp-card space-y-3 p-4">
-        <div class="flex flex-wrap items-center justify-between gap-2">
-          <h3 class="text-sm font-semibold">Ask PaisaPilot AI (${state.aiStatus.geminiConfigured ? 'Gemini Enabled' : 'Rule Engine'})</h3>
-          <span class="text-xs text-slate-400">Grounded strictly in your persisted ledger</span>
-        </div>
-        <form id="form-ai-ask" class="flex flex-wrap gap-2">
-          <input type="text" id="ai-ask-input" required class="pp-input flex-1" placeholder="e.g. How much did I spend on food this month? Top merchants?">
-          <button type="submit" class="pp-btn pp-btn-primary">Ask AI</button>
-        </form>
-        <div id="ai-ask-reply" class="hidden rounded-xl border border-sky-500/30 bg-sky-500/10 p-3 text-xs leading-relaxed"></div>
-      </div>
-
-      <div class="grid gap-4 lg:grid-cols-2">
-        <div class="pp-card space-y-2.5 p-4">
-          <h3 class="text-sm font-semibold">Spending Insights (${esc(data.monthKey)})</h3>
-          ${data.insights.length === 0 ? `<div class="text-xs text-slate-400">Add more transactions across months to unlock anomaly &amp; trend insights.</div>` : data.insights.map((ins) => `
-            <div class="rounded-xl border px-3.5 py-2.5 text-xs ${
-              ins.kind === 'warning'
-                ? 'border-rose-500/35 bg-rose-500/10'
-                : ins.kind === 'attention'
-                  ? 'border-amber-500/35 bg-amber-500/10'
-                  : 'border-sky-500/30 bg-sky-500/10'
-            }">
-              <strong class="block font-semibold">${esc(ins.title)}</strong>
-              <div class="mt-1 text-slate-700 dark:text-slate-300">${esc(ins.detail)}</div>
-              <div class="mt-1 text-[11px] text-slate-500 dark:text-slate-400">Window: ${esc(ins.window)}</div>
-            </div>
-          `).join('')}
-        </div>
-
-        <div class="pp-card space-y-2.5 p-4">
-          <h3 class="text-sm font-semibold">Detected Repeat Merchants</h3>
-          ${data.recurringCandidates.length === 0 ? `<div class="text-xs text-slate-400">No repeated merchant charges detected yet.</div>` : `
-            <div class="divide-y divide-slate-500/15">
-              ${data.recurringCandidates.map((rc) => `
-                <div class="flex items-center justify-between py-2 text-xs">
-                  <span><strong>${esc(rc.merchant)}</strong> <span class="text-slate-400">(${rc.cnt} times)</span></span>
-                  <strong>${fmtINR(rc.amt)}</strong>
-                </div>
-              `).join('')}
-            </div>
-          `}
-        </div>
-      </div>
-    </div>
-  `;
-
-  root.querySelector('#form-ai-ask').addEventListener('submit', async (e) => {
-    e.preventDefault();
-    const q = root.querySelector('#ai-ask-input').value;
-    const replyBox = root.querySelector('#ai-ask-reply');
-    replyBox.textContent = 'Analyzing your persisted transactions...';
-    replyBox.classList.remove('hidden');
-    try {
-      const res = await api('/api/v1/ai/ask', { method: 'POST', body: { question: q, monthKey } });
-      replyBox.innerHTML = `<strong class="text-sky-700 dark:text-sky-400">Answer (${esc(res.source)}):</strong><div class="mt-1.5 whitespace-pre-line">${esc(res.answer)}</div>`;
-    } catch (err) {
-      replyBox.textContent = err.message;
-    }
-  });
-}
-
 // 12. REPORTS & EXPORTS
 export async function renderReportsView(root) {
   const monthKey = state.monthKey || getTodayInUserTz().slice(0, 7);
@@ -787,7 +478,8 @@ export async function renderEmailSettingsView(root) {
 
       <div class="grid gap-4 lg:grid-cols-2">
         <div class="pp-card space-y-3 p-4">
-          <h3 class="text-sm font-semibold">Daily 11:00 PM Summary Settings</h3>
+          <h3 class="text-sm font-semibold">4-Day Expenses &amp; Budget Alert Settings</h3>
+          <p class="text-xs text-slate-400">Receive a 4-day expenses summary every 4 days, plus immediate email alerts whenever your monthly or category budget is exceeded.</p>
           <form id="form-email-cfg" class="space-y-3">
             <label class="pp-label">Recipient Email
               <input type="email" name="email_recipient" value="${esc(emailCfg.settings.email_recipient)}" required class="pp-input mt-1">
@@ -803,7 +495,7 @@ export async function renderEmailSettingsView(root) {
               <button type="button" class="pp-btn pp-btn-primary pp-btn-sm" id="btn-confirm-code">Verify</button>
             </div>
             <div class="grid gap-3 sm:grid-cols-2">
-              <label class="pp-label">Delivery Time
+              <label class="pp-label">Digest Delivery Time (Every 4 Days)
                 <input type="time" name="daily_email_time" value="${esc(emailCfg.settings.daily_email_time)}" class="pp-input mt-1">
               </label>
               <label class="pp-label">Timezone
@@ -814,19 +506,19 @@ export async function renderEmailSettingsView(root) {
             </div>
             <label class="flex items-center gap-2 text-xs">
               <input type="checkbox" name="daily_email_enabled" ${emailCfg.settings.daily_email_enabled ? 'checked' : ''}>
-              <span>Enable automatic server-scheduled daily digest</span>
+              <span>Enable automatic 4-day expenses summary email</span>
             </label>
             <div class="flex flex-wrap gap-2">
               <button type="submit" class="pp-btn pp-btn-primary pp-btn-sm">Save Schedule</button>
               <button type="button" class="pp-btn pp-btn-secondary pp-btn-sm" id="btn-send-test">Send Test</button>
-              <button type="button" class="pp-btn pp-btn-ghost pp-btn-sm" id="btn-send-today">Send Today's Report</button>
+              <button type="button" class="pp-btn pp-btn-ghost pp-btn-sm" id="btn-send-today">Send 4-Day Report Now</button>
             </div>
           </form>
         </div>
 
         <div class="pp-card space-y-3 p-4">
-          <h3 class="text-sm font-semibold">Live Digest Preview</h3>
-          <iframe title="Daily Email Preview" srcdoc="${esc(preview.html)}" class="h-[360px] w-full rounded-xl border border-slate-500/20 bg-slate-950"></iframe>
+          <h3 class="text-sm font-semibold">Live 4-Day Digest Preview</h3>
+          <iframe title="4-Day Expenses Email Preview" srcdoc="${esc(preview.html)}" class="h-[360px] w-full rounded-xl border border-slate-500/20 bg-slate-950"></iframe>
         </div>
       </div>
 

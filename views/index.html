@@ -2,30 +2,46 @@
 <html lang="en" data-theme="dark">
 <head>
   <meta charset="utf-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>PaisaPilot — Personal Expense Tracker &amp; 3D Money Intelligence</title>
-  <meta name="description" content="Track every rupee spent, reconcile PhonePe/UPI statements, visualize spending in 3D, and receive an 11:00 PM Brevo daily digest.">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <title>PaisaPilot — Personal Expense &amp; Budget Ledger</title>
+  <meta name="description" content="Personal expense ledger, receipt scanner, budget alerts, and 4-day email summaries.">
   <link rel="icon" href="/images/paisapilot-logo.svg" type="image/svg+xml">
-  <link rel="stylesheet" href="/css/app.css?v=2">
+  <link rel="stylesheet" href="/css/app.css?v=7">
 </head>
 <body class="min-h-screen font-sans antialiased">
   <a href="#main-content" class="sr-only focus:not-sr-only focus:fixed focus:top-3 focus:left-3 focus:z-50 pp-btn-primary">Skip to main content</a>
 
+  <!-- OPENING 3D LAUNCH SPLASH -->
+  <div id="pp-launch-splash" class="fixed inset-0 z-50 grid place-items-center px-6" aria-hidden="true">
+    <div class="pp-splash-emblem flex flex-col items-center gap-4 text-center">
+      <div class="flex h-16 w-16 items-center justify-center rounded-2xl border border-emerald-500/30 bg-emerald-500/10 shadow-xl">
+        <img src="/images/paisapilot-logo.svg" alt="" width="40" height="40" class="rounded-xl">
+      </div>
+      <div>
+        <div class="text-xl font-bold tracking-tight">PaisaPilot</div>
+        <div class="text-xs text-slate-500 dark:text-slate-400">Personal Expense &amp; Budget Ledger</div>
+      </div>
+      <div class="h-1 w-32 overflow-hidden rounded-full bg-slate-500/20">
+        <div class="pp-splash-bar h-full w-full origin-left rounded-full bg-teal-600 dark:bg-emerald-400"></div>
+      </div>
+    </div>
+  </div>
+
   <!-- AUTH SHELL -->
   <div id="auth-shell" class="hidden min-h-screen grid place-items-center p-4 sm:p-6">
-    <div class="pp-card w-full max-w-md p-6 sm:p-8 space-y-5">
+    <div class="pp-card pp-view-enter w-full max-w-md p-6 sm:p-8 space-y-5">
       <div class="flex items-center gap-3.5">
         <img src="/images/paisapilot-logo.svg" alt="PaisaPilot" width="44" height="44" class="rounded-xl shrink-0">
         <div>
           <h1 class="text-xl font-bold tracking-tight">PaisaPilot</h1>
-          <p class="text-xs text-slate-400">Every rupee accounted for · 3D Money Intelligence</p>
+          <p class="text-xs text-slate-500 dark:text-slate-400">Personal expense tracking &amp; monthly budgets</p>
         </div>
       </div>
 
       <div class="pp-surface-sub grid grid-cols-3 gap-1 p-1" role="tablist">
-        <button type="button" class="tab-btn active rounded-lg py-2 text-xs font-semibold transition bg-sky-500/20 text-sky-400" data-auth-tab="login">Sign In</button>
-        <button type="button" class="tab-btn rounded-lg py-2 text-xs font-semibold transition text-slate-400" data-auth-tab="register">Create Account</button>
-        <button type="button" class="tab-btn rounded-lg py-2 text-xs font-semibold transition text-slate-400" data-auth-tab="reset">Reset</button>
+        <button type="button" class="tab-btn active rounded-lg py-2 text-xs font-semibold transition bg-slate-900 text-white dark:bg-emerald-500/20 dark:text-emerald-300" data-auth-tab="login">Sign In</button>
+        <button type="button" class="tab-btn rounded-lg py-2 text-xs font-semibold transition text-slate-500 dark:text-slate-400" data-auth-tab="register">Create Account</button>
+        <button type="button" class="tab-btn rounded-lg py-2 text-xs font-semibold transition text-slate-500 dark:text-slate-400" data-auth-tab="reset">Reset</button>
       </div>
 
       <div id="auth-alert" class="hidden rounded-xl border px-3.5 py-2.5 text-xs font-medium" role="alert"></div>
@@ -90,13 +106,14 @@
 
   <!-- MAIN APPLICATION SHELL -->
   <div id="app-shell" class="hidden min-h-screen lg:grid lg:grid-cols-[248px_1fr]">
-    <aside id="sidebar" class="fixed inset-y-0 left-0 z-40 w-64 -translate-x-full lg:translate-x-0 lg:sticky lg:top-0 lg:h-screen lg:w-auto flex flex-col p-4 border-r border-slate-500/15 bg-white/85 dark:bg-slate-950/85 backdrop-blur-xl transition-transform duration-200">
+    <div id="sidebar-backdrop" class="hidden fixed inset-0 z-30 bg-slate-950/60 backdrop-blur-sm lg:hidden" aria-hidden="true"></div>
+    <aside id="sidebar" class="fixed inset-y-0 left-0 z-40 w-72 max-w-[82vw] -translate-x-full lg:translate-x-0 lg:sticky lg:top-0 lg:h-screen lg:w-auto flex flex-col p-4 border-r border-slate-500/15 bg-white/95 dark:bg-[#11151d]/95 lg:bg-white/90 dark:lg:bg-slate-950/85 backdrop-blur-xl transition-transform duration-300 ease-out">
       <div class="flex items-center justify-between gap-2 pb-4 border-b border-slate-500/15">
         <div class="flex items-center gap-2.5">
           <img src="/images/paisapilot-logo.svg" alt="PaisaPilot" width="32" height="32" class="rounded-lg">
           <div>
             <div class="font-bold text-sm tracking-tight">PaisaPilot</div>
-            <div class="text-[11px] text-slate-400" id="sidebar-tz">IST · INR</div>
+            <div class="text-[11px] text-slate-500 dark:text-slate-400" id="sidebar-tz">IST · INR</div>
           </div>
         </div>
         <button type="button" class="lg:hidden pp-btn-ghost pp-btn-sm" id="btn-close-sidebar" aria-label="Close navigation">&times;</button>
@@ -105,27 +122,19 @@
       <nav class="flex-1 overflow-y-auto py-3 space-y-1" aria-label="Primary">
         <a href="/dashboard" class="pp-nav-item" data-route="dashboard"><span>Dashboard</span></a>
         <a href="/transactions" class="pp-nav-item" data-route="transactions"><span>Transactions</span></a>
-        <a href="/import" class="pp-nav-item" data-route="import"><span>Import Center</span></a>
-        <a href="/sources" class="pp-nav-item" data-route="sources"><span>PhonePe &amp; Sources</span></a>
-        <a href="/reconciliation" class="pp-nav-item" data-route="reconciliation">
-          <span>Reconciliation</span>
-          <span class="hidden px-2 py-0.5 text-[11px] font-bold rounded-full bg-amber-400 text-slate-950" id="nav-review-badge">0</span>
-        </a>
+        <a href="/import" class="pp-nav-item" data-route="import"><span>Import &amp; Scan</span></a>
         <a href="/budgets" class="pp-nav-item" data-route="budgets"><span>Budgets</span></a>
         <a href="/goals" class="pp-nav-item" data-route="goals"><span>Savings Goals</span></a>
-        <a href="/recurring" class="pp-nav-item" data-route="recurring"><span>Recurring Bills</span></a>
-        <a href="/insights" class="pp-nav-item" data-route="insights"><span>AI Insights</span></a>
         <a href="/reports" class="pp-nav-item" data-route="reports"><span>Reports &amp; Exports</span></a>
-        <a href="/email-settings" class="pp-nav-item" data-route="email-settings"><span>11 PM Brevo Email</span></a>
+        <a href="/email-settings" class="pp-nav-item" data-route="email-settings"><span>4-Day &amp; Budget Emails</span></a>
         <a href="/settings" class="pp-nav-item" data-route="settings"><span>Settings &amp; Privacy</span></a>
       </nav>
 
       <div class="pt-3 border-t border-slate-500/15 space-y-2.5">
-        <div class="text-[11px] font-medium text-center px-2.5 py-1.5 rounded-full bg-emerald-500/10 text-emerald-700 dark:text-emerald-400 border border-emerald-500/25" id="ai-status-pill">AI Engine: Checking...</div>
         <div class="flex items-center justify-between gap-2">
           <div class="min-w-0">
             <div id="user-name-label" class="text-xs font-semibold truncate">User</div>
-            <div id="user-email-label" class="text-[11px] text-slate-400 truncate"></div>
+            <div id="user-email-label" class="text-[11px] text-slate-500 dark:text-slate-400 truncate"></div>
           </div>
           <button type="button" class="pp-btn-ghost pp-btn-sm shrink-0" id="btn-logout">Sign out</button>
         </div>
@@ -133,34 +142,93 @@
     </aside>
 
     <div class="flex flex-col min-w-0">
-      <header class="sticky top-0 z-30 flex items-center justify-between gap-3 px-4 sm:px-6 py-3.5 border-b border-slate-500/15 backdrop-blur-xl bg-white/75 dark:bg-slate-950/60">
-        <div class="flex items-center gap-3">
-          <button type="button" class="lg:hidden pp-btn-ghost pp-btn-sm" id="btn-open-sidebar" aria-label="Open navigation">☰</button>
-          <h2 id="page-title" class="text-lg font-bold tracking-tight">Dashboard</h2>
+      <header class="sticky top-0 z-20 flex items-center justify-between gap-2 px-3.5 sm:px-6 py-3 border-b border-slate-500/15 backdrop-blur-xl bg-white/85 dark:bg-[#11151d]/85">
+        <div class="flex items-center gap-2.5 min-w-0">
+          <button type="button" class="lg:hidden pp-btn-ghost pp-btn-sm px-2.5" id="btn-open-sidebar" aria-label="Open navigation">☰</button>
+          <h2 id="page-title" class="text-base sm:text-lg font-bold tracking-tight truncate">Dashboard</h2>
         </div>
-        <div class="flex items-center gap-2">
-          <button type="button" class="pp-btn-ghost pp-btn-sm" id="btn-toggle-3d" title="Toggle 3D visualizations">3D: On</button>
-          <button type="button" class="pp-btn-ghost pp-btn-sm" id="btn-toggle-theme" title="Switch dark/light theme">Theme</button>
-          <button type="button" class="pp-btn-primary pp-btn-sm sm:px-4" id="btn-quick-add">+ Add Expense</button>
+        <div class="flex items-center gap-1.5 sm:gap-2 shrink-0">
+          <button type="button" class="pp-btn-ghost pp-btn-sm px-2.5 sm:px-3" id="btn-toggle-3d" title="Toggle 3D visualizations">3D: On</button>
+          <button type="button" class="pp-btn-ghost pp-btn-sm px-2.5 sm:px-3" id="btn-toggle-theme" title="Switch dark/light theme">Theme</button>
+          <button type="button" class="hidden sm:inline-flex pp-btn-primary pp-btn-sm sm:px-4" id="btn-quick-add">+ Add Expense</button>
         </div>
       </header>
 
-      <div id="global-toast" class="hidden fixed right-5 bottom-5 z-50 px-4 py-2.5 rounded-xl bg-slate-900 text-slate-100 border border-sky-400/60 shadow-2xl text-xs font-medium" role="status" aria-live="polite"></div>
+      <div id="global-toast" class="hidden fixed top-16 right-4 sm:right-5 z-50 max-w-[calc(100vw-2rem)] px-4 py-2.5 rounded-xl bg-slate-900 text-slate-100 border border-emerald-500/50 shadow-2xl text-xs font-medium" role="status" aria-live="polite"></div>
 
-      <main id="main-content" class="flex-1 w-full max-w-7xl mx-auto p-4 sm:p-6 pb-12" tabindex="-1">
+      <main id="main-content" class="pp-stage-3d flex-1 w-full max-w-7xl mx-auto p-3.5 sm:p-6 pb-24 lg:pb-12" tabindex="-1">
         <section id="view-dashboard" class="view-section hidden"></section>
         <section id="view-transactions" class="view-section hidden"></section>
         <section id="view-import" class="view-section hidden"></section>
-        <section id="view-sources" class="view-section hidden"></section>
-        <section id="view-reconciliation" class="view-section hidden"></section>
         <section id="view-budgets" class="view-section hidden"></section>
         <section id="view-goals" class="view-section hidden"></section>
-        <section id="view-recurring" class="view-section hidden"></section>
-        <section id="view-insights" class="view-section hidden"></section>
         <section id="view-reports" class="view-section hidden"></section>
         <section id="view-email-settings" class="view-section hidden"></section>
         <section id="view-settings" class="view-section hidden"></section>
       </main>
+    </div>
+
+    <!-- MOBILE BOTTOM NAVIGATION BAR -->
+    <nav class="lg:hidden fixed inset-x-0 bottom-0 z-30 grid grid-cols-5 items-center gap-1 border-t border-slate-500/15 bg-white/95 dark:bg-[#11151d]/95 px-2 py-1.5 backdrop-blur-xl pb-[max(0.375rem,env(safe-area-inset-bottom))]" aria-label="Mobile Navigation">
+      <a href="/dashboard" class="pp-dock-item" data-route="dashboard">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><rect x="3" y="3" width="7" height="9" rx="1.5"/><rect x="14" y="3" width="7" height="5" rx="1.5"/><rect x="14" y="12" width="7" height="9" rx="1.5"/><rect x="3" y="16" width="7" height="5" rx="1.5"/></svg>
+        <span>Home</span>
+      </a>
+      <a href="/transactions" class="pp-dock-item" data-route="transactions">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M8 6h13M8 12h13M8 18h13M3 6h.01M3 12h.01M3 18h.01"/></svg>
+        <span>Ledger</span>
+      </a>
+      <button type="button" id="btn-dock-add" class="flex flex-col items-center justify-center gap-0.5 min-h-[46px] rounded-xl bg-slate-900 text-white dark:bg-emerald-500 dark:text-slate-950 text-[11px] font-bold shadow-sm active:scale-95 transition">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" aria-hidden="true"><path d="M12 5v14M5 12h14"/></svg>
+        <span>Add</span>
+      </button>
+      <a href="/import" class="pp-dock-item" data-route="import">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
+        <span>Scan</span>
+      </a>
+      <button type="button" id="btn-mobile-more" class="pp-dock-item" aria-label="Open all sections">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><circle cx="12" cy="12" r="1"/><circle cx="19" cy="12" r="1"/><circle cx="5" cy="12" r="1"/></svg>
+        <span>More</span>
+      </button>
+    </nav>
+
+    <!-- FLOATING ROUND INSIGHTS CHATBOT (BOTTOM-RIGHT) -->
+    <div id="ai-chat-widget">
+      <div id="ai-chat-panel" class="hidden pp-view-enter fixed bottom-36 right-3.5 lg:bottom-24 lg:right-6 z-40 w-[min(390px,calc(100vw-1.75rem))] max-h-[min(520px,calc(100vh-11rem))] flex flex-col overflow-hidden rounded-2xl border border-slate-500/25 bg-[var(--pp-surface)] shadow-2xl backdrop-blur-xl" role="dialog" aria-label="PaisaPilot Spending Assistant">
+        <div class="flex items-center justify-between gap-2 border-b border-slate-500/15 px-4 py-3">
+          <div class="flex items-center gap-2.5">
+            <span class="flex h-8 w-8 items-center justify-center rounded-full bg-slate-900 text-white dark:bg-emerald-500 dark:text-slate-950">
+              <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/>
+              </svg>
+            </span>
+            <div>
+              <div class="text-xs font-bold leading-tight">Spending Assistant</div>
+              <div id="ai-chat-mode" class="text-[11px] text-slate-500 dark:text-slate-400">Grounded in your ledger</div>
+            </div>
+          </div>
+          <button type="button" id="btn-close-ai-chat" class="pp-btn-ghost pp-btn-sm" aria-label="Close assistant">&times;</button>
+        </div>
+
+        <div id="ai-chat-messages" class="flex-1 space-y-2.5 overflow-y-auto p-3.5 text-xs"></div>
+
+        <div class="flex flex-wrap gap-1.5 border-t border-slate-500/15 px-3 py-2">
+          <button type="button" class="ai-chat-chip pp-surface-sub px-2.5 py-1 text-[11px] font-medium hover:border-emerald-500/50" data-q="How much did I spend on food this month?">Food spend?</button>
+          <button type="button" class="ai-chat-chip pp-surface-sub px-2.5 py-1 text-[11px] font-medium hover:border-emerald-500/50" data-q="What are my top merchants this month?">Top merchants</button>
+          <button type="button" class="ai-chat-chip pp-surface-sub px-2.5 py-1 text-[11px] font-medium hover:border-emerald-500/50" data-q="Any unusual spending spikes or insights?">Spikes?</button>
+        </div>
+
+        <form id="ai-chat-form" class="flex gap-2 border-t border-slate-500/15 p-3">
+          <input type="text" id="ai-chat-input" required class="pp-input text-xs" placeholder="Ask about your spending...">
+          <button type="submit" class="pp-btn-primary pp-btn-sm shrink-0">Send</button>
+        </form>
+      </div>
+
+      <button type="button" id="ai-chat-fab" class="fixed bottom-20 right-4 lg:bottom-6 lg:right-6 z-40 flex h-12 w-12 sm:h-14 sm:w-14 items-center justify-center rounded-full bg-slate-900 text-white dark:bg-emerald-500 dark:text-slate-950 shadow-xl ring-4 ring-slate-900/10 dark:ring-emerald-400/20 transition-transform hover:scale-105 active:scale-95 cursor-pointer" aria-label="Open Spending Assistant" title="Spending Assistant">
+        <svg width="21" height="21" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+          <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/>
+        </svg>
+      </button>
     </div>
   </div>
 
@@ -172,9 +240,9 @@
         <button type="button" class="pp-btn-ghost pp-btn-sm" id="btn-close-tx-modal" aria-label="Close">&times;</button>
       </div>
 
-      <div class="flex gap-2 p-2 rounded-xl bg-sky-500/10 border border-sky-400/25">
-        <input type="text" id="ai-parse-input" class="pp-input" placeholder='AI Quick Parse: "Paid Rs 420 to Swiggy via PhonePe UPI"'>
-        <button type="button" class="pp-btn-secondary pp-btn-sm shrink-0" id="btn-ai-parse">Parse AI</button>
+      <div class="pp-surface-sub flex gap-2 p-2">
+        <input type="text" id="ai-parse-input" class="pp-input" placeholder='Quick entry: "Paid Rs 420 to Swiggy via UPI"'>
+        <button type="button" class="pp-btn-secondary pp-btn-sm shrink-0" id="btn-ai-parse">Auto-fill</button>
       </div>
 
       <input type="hidden" id="tx-id">
@@ -264,6 +332,6 @@
     </form>
   </dialog>
 
-  <script type="module" src="/js/app.js?v=2"></script>
+  <script type="module" src="/js/app.js?v=7"></script>
 </body>
 </html>

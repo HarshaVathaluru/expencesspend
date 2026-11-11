@@ -5,6 +5,7 @@ const db = require('../lib/db');
 const { newId, sha256 } = require('../lib/crypto');
 const { requireAuth } = require('../lib/auth');
 const ingestion = require('../lib/ingestion');
+const { parsePaymentImage } = require('../lib/ai');
 const { getDatePartsInTz } = require('../lib/money');
 const { createTransaction } = require('../lib/transactions');
 const { recordAudit } = require('../lib/audit');
@@ -225,6 +226,46 @@ router.post('/ingestion/import/pdf-preview', upload.single('file'), async (req, 
       totalRows: extracted.rows.length,
       previewRows: extracted.rows.slice(0, 20),
       rows: extracted.rows.slice(0, 1000)
+    });
+  } catch (err) {
+    next(err);
+  }
+});
+
+router.post('/ingestion/import/image-preview', upload.single('file'), async (req, res, next) => {
+  try {
+    if (!req.file) return res.status(400).json({ error: 'Please upload a receipt or payment screenshot image' });
+    const mime = String(req.file.mimetype || '').toLowerCase();
+    const ext = String(req.file.originalname || '').toLowerCase();
+    const allowedMimes = ['image/png', 'image/jpeg', 'image/jpg', 'image/webp'];
+    if (!allowedMimes.includes(mime) && !/\.(png|jpe?g|webp)$/.test(ext)) {
+      return res.status(400).json({ error: 'Only PNG, JPG, JPEG, or WEBP images are supported here' });
+    }
+    const normalizedMime = mime === 'image/jpg'
+      ? 'image/jpeg'
+      : allowedMimes.includes(mime)
+        ? mime
+        : ext.endsWith('.png')
+          ? 'image/png'
+          : ext.endsWith('.webp')
+            ? 'image/webp'
+            : 'image/jpeg';
+
+    const tz = req.userSettings?.timezone || 'Asia/Kolkata';
+    const todayLocalDate = getDatePartsInTz(new Date(), tz).localDate;
+    const draft = await parsePaymentImage({
+      userId: req.user.id,
+      buffer: req.file.buffer,
+      mimeType: normalizedMime,
+      filename: req.file.originalname,
+      todayLocalDate
+    });
+
+    res.json({
+      filename: req.file.originalname,
+      mimeType: normalizedMime,
+      detected: draft.detected,
+      draft
     });
   } catch (err) {
     next(err);

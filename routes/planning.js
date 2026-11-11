@@ -5,6 +5,7 @@ const { requireAuth } = require('../lib/auth');
 const { toPaise, getDatePartsInTz, shiftDate } = require('../lib/money');
 const { createTransaction, getAnalyticsSummary } = require('../lib/transactions');
 const { generateInsights } = require('../lib/insights');
+const { checkAndSendBudgetExceededAlert } = require('../lib/brevo');
 
 const router = express.Router();
 router.use(requireAuth);
@@ -89,6 +90,12 @@ router.put('/budgets', async (req, res, next) => {
         );
       }
     }
+
+    await checkAndSendBudgetExceededAlert({
+      userId: req.user.id,
+      monthKey: monthKey === 'default' ? getDatePartsInTz(new Date(), tz).monthKey : monthKey,
+      timezone: tz
+    });
 
     res.json({ ok: true, budgetId, monthKey });
   } catch (err) {

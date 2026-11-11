@@ -1,30 +1,22 @@
-import { api, state, esc, fmtINR, animateCountUp, showToast, getTodayInUserTz } from './api.js?v=2';
-import { mountDashboardHero3D, mountCategoryExplorer3D, cleanupAllScenes } from './scenes3d.js?v=2';
+import { api, state, esc, fmtINR, animateCountUp, showToast, getTodayInUserTz } from './api.js?v=7';
+import { mountDashboardHero3D, mountCategoryExplorer3D, cleanupAllScenes } from './scenes3d.js?v=7';
 import {
   renderImportView,
-  renderSourcesView,
-  renderReconciliationView,
   renderBudgetsView,
   renderGoalsView,
-  renderRecurringView,
-  renderInsightsView,
   renderReportsView,
   renderEmailSettingsView,
   renderSettingsView
-} from './views-extra.js?v=2';
+} from './views-extra.js?v=7';
 
 const ROUTE_TITLES = {
   dashboard: 'Dashboard',
   transactions: 'Transactions',
-  import: 'Import Center',
-  sources: 'PhonePe & Capture Sources',
-  reconciliation: 'Reconciliation Center',
+  import: 'Import Statements & Payment Scan',
   budgets: 'Budgets & Category Limits',
   goals: 'Savings Goals',
-  recurring: 'Recurring Payments',
-  insights: 'AI Insights & Analytics',
   reports: 'Reports & Exports',
-  'email-settings': '11:00 PM Brevo Email',
+  'email-settings': '4-Day & Budget Alert Emails',
   settings: 'Settings, Privacy & Security'
 };
 
@@ -39,9 +31,12 @@ function txStatusPill(status) {
 
 function setSidebarOpen(open) {
   const sb = document.getElementById('sidebar');
-  if (!sb) return;
-  sb.classList.toggle('translate-x-0', open);
-  sb.classList.toggle('-translate-x-full', !open);
+  const bd = document.getElementById('sidebar-backdrop');
+  if (sb) {
+    sb.classList.toggle('translate-x-0', open);
+    sb.classList.toggle('-translate-x-full', !open);
+  }
+  if (bd) bd.classList.toggle('hidden', !open);
 }
 
 function applyThemeAndMotion() {
@@ -99,14 +94,14 @@ function renderDailyTrendSvg(dailyTrend) {
     <svg viewBox="0 0 ${w} ${h}" class="h-40 w-full overflow-visible" role="img" aria-label="Daily spending trend chart">
       <defs>
         <linearGradient id="trendGrad" x1="0" y1="0" x2="0" y2="1">
-          <stop offset="0%" stop-color="#38BDF8" stop-opacity="0.35"/>
-          <stop offset="100%" stop-color="#38BDF8" stop-opacity="0.0"/>
+          <stop offset="0%" stop-color="#10B981" stop-opacity="0.28"/>
+          <stop offset="100%" stop-color="#10B981" stop-opacity="0.0"/>
         </linearGradient>
       </defs>
       <path d="${areaD}" fill="url(#trendGrad)"/>
-      <path d="${pathD}" fill="none" stroke="#38BDF8" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/>
+      <path d="${pathD}" fill="none" stroke="#10B981" stroke-width="2.25" stroke-linecap="round" stroke-linejoin="round"/>
       ${pts.map((p) => `
-        <circle cx="${p.x.toFixed(1)}" cy="${p.y.toFixed(1)}" r="4" fill="#10B981">
+        <circle cx="${p.x.toFixed(1)}" cy="${p.y.toFixed(1)}" r="3.75" fill="#10B981">
           <title>${p.d.date}: ${fmtINR(p.d.totalPaise)}</title>
         </circle>
       `).join('')}
@@ -127,17 +122,7 @@ async function renderDashboardView(root) {
   const range = getDateFilterParams();
   state.monthKey = range.monthKey;
 
-  const [{ summary }, recOverview] = await Promise.all([
-    api(`/api/v1/dashboard/summary?startDate=${range.startDate}&endDate=${range.endDate}&monthKey=${range.monthKey}`),
-    api(`/api/v1/reconciliation?monthKey=${range.monthKey}`)
-  ]);
-
-  const reviewBadge = document.getElementById('nav-review-badge');
-  const pendingCount = summary.reconciliationCounts.needs_review + summary.reconciliationCounts.possible_duplicate + recOverview.pendingIngestionEventsCount;
-  if (reviewBadge) {
-    reviewBadge.textContent = String(pendingCount);
-    reviewBadge.classList.toggle('hidden', pendingCount === 0);
-  }
+  const { summary } = await api(`/api/v1/dashboard/summary?startDate=${range.startDate}&endDate=${range.endDate}&monthKey=${range.monthKey}`);
 
   const budgetRemain = summary.overallBudgetPaise > 0 ? summary.budgetRemainingPaise : null;
   const maxCmp = Math.max(summary.prevMonthSpentPaise, summary.netSpentPaise, 100);
@@ -159,10 +144,10 @@ async function renderDashboardView(root) {
         </div>
       ` : ''}
 
-      <!-- Period Filter & AI Quick Add -->
-      <div class="pp-card space-y-3 p-4">
-        <div class="flex flex-wrap items-center justify-between gap-2">
-          <div class="flex flex-wrap gap-1.5">
+      <!-- Period Filter Bar -->
+      <div class="pp-card space-y-3 p-3.5 sm:p-4">
+        <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2.5">
+          <div class="flex items-center gap-1.5 overflow-x-auto no-scrollbar pb-0.5">
             ${[
               ['today', 'Today'],
               ['yesterday', 'Yesterday'],
@@ -170,7 +155,7 @@ async function renderDashboardView(root) {
               ['this_month', 'This Month'],
               ['last_month', 'Last Month'],
               ['custom', 'Custom']
-            ].map(([k, lbl]) => `<button type="button" class="pp-btn pp-btn-sm ${state.datePreset === k ? 'pp-btn-primary' : 'pp-btn-ghost'}" data-preset="${k}">${lbl}</button>`).join('')}
+            ].map(([k, lbl]) => `<button type="button" class="pp-btn pp-btn-sm shrink-0 whitespace-nowrap ${state.datePreset === k ? 'pp-btn-primary' : 'pp-btn-ghost'}" data-preset="${k}">${lbl}</button>`).join('')}
           </div>
           <div class="${state.datePreset === 'custom' ? 'flex' : 'hidden'} flex-wrap items-center gap-2" id="custom-range-box">
             <input type="date" id="dash-start" value="${range.startDate}" class="pp-input w-36 text-xs">
@@ -178,49 +163,45 @@ async function renderDashboardView(root) {
             <button type="button" class="pp-btn pp-btn-secondary pp-btn-sm" id="btn-apply-custom">Apply</button>
           </div>
         </div>
-        <div class="flex flex-wrap gap-2">
-          <input type="text" id="dash-ai-quick" class="pp-input flex-1 text-xs" placeholder='AI Quick Add: "Paid ₹280 to Uber via PhonePe UPI"'>
-          <button type="button" class="pp-btn pp-btn-primary pp-btn-sm" id="btn-dash-ai-go">AI Quick Add</button>
-        </div>
       </div>
 
       <!-- 4 Core KPIs -->
-      <div class="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
-        <div class="pp-card p-4">
-          <div class="text-xs text-slate-400">Spent Today</div>
-          <div class="mt-1 text-2xl font-bold tracking-tight" id="kpi-today">₹0.00</div>
-          <div class="mt-0.5 text-[11px] text-slate-400">${esc(summary.todayDate)} · 7d: ${fmtINR(summary.weekSpentPaise)}</div>
+      <div class="pp-stagger grid grid-cols-2 gap-3 lg:grid-cols-4">
+        <div class="pp-card pp-card-interactive p-3.5 sm:p-4">
+          <div class="text-[11px] sm:text-xs text-slate-500 dark:text-slate-400">Spent Today</div>
+          <div class="pp-num mt-1 text-lg sm:text-2xl font-bold tracking-tight" id="kpi-today">₹0.00</div>
+          <div class="pp-num mt-0.5 text-[11px] text-slate-500 dark:text-slate-400 truncate">${esc(summary.todayDate)} · 7d: ${fmtINR(summary.weekSpentPaise)}</div>
         </div>
-        <div class="pp-card p-4">
-          <div class="text-xs text-slate-400">Period Net Spent</div>
-          <div class="mt-1 text-2xl font-bold tracking-tight" id="kpi-month">₹0.00</div>
-          <div class="mt-0.5 text-[11px] ${summary.deltaPaise > 0 ? 'text-rose-400' : 'text-emerald-400'}">${summary.deltaPaise >= 0 ? '+' : ''}${fmtINR(summary.deltaPaise)} (${summary.deltaPercent}%) vs ${esc(summary.prevMonthKey)}</div>
+        <div class="pp-card pp-card-interactive p-3.5 sm:p-4">
+          <div class="text-[11px] sm:text-xs text-slate-500 dark:text-slate-400">Period Net Spent</div>
+          <div class="pp-num mt-1 text-lg sm:text-2xl font-bold tracking-tight" id="kpi-month">₹0.00</div>
+          <div class="pp-num mt-0.5 text-[11px] truncate ${summary.deltaPaise > 0 ? 'text-rose-500 dark:text-rose-400' : 'text-emerald-600 dark:text-emerald-400'}">${summary.deltaPaise >= 0 ? '+' : ''}${fmtINR(summary.deltaPaise)} (${summary.deltaPercent}%)</div>
         </div>
-        <div class="pp-card p-4">
-          <div class="text-xs text-slate-400">Income</div>
-          <div class="mt-1 text-2xl font-bold tracking-tight text-emerald-400" id="kpi-income">₹0.00</div>
-          <div class="mt-0.5 text-[11px] text-slate-400">Net flow: ${fmtINR(summary.netCashFlowPaise)}</div>
+        <div class="pp-card pp-card-interactive p-3.5 sm:p-4">
+          <div class="text-[11px] sm:text-xs text-slate-500 dark:text-slate-400">Income</div>
+          <div class="pp-num mt-1 text-lg sm:text-2xl font-bold tracking-tight text-emerald-600 dark:text-emerald-400" id="kpi-income">₹0.00</div>
+          <div class="pp-num mt-0.5 text-[11px] text-slate-500 dark:text-slate-400 truncate">Net flow: ${fmtINR(summary.netCashFlowPaise)}</div>
         </div>
-        <div class="pp-card p-4">
-          <div class="text-xs text-slate-400">Budget Remaining</div>
-          <div class="mt-1 text-2xl font-bold tracking-tight ${budgetRemain !== null && budgetRemain < 0 ? 'text-rose-400' : ''}" id="kpi-budget">${budgetRemain !== null ? '₹0.00' : 'Not set'}</div>
-          <div class="mt-0.5 text-[11px] text-slate-400">${summary.overallBudgetPaise > 0 ? `${summary.budgetUsedPercent}% of ${fmtINR(summary.overallBudgetPaise)}` : '<button type="button" class="text-sky-400 hover:underline" data-nav="budgets">Set monthly budget</button>'}</div>
+        <div class="pp-card pp-card-interactive p-3.5 sm:p-4">
+          <div class="text-[11px] sm:text-xs text-slate-500 dark:text-slate-400">Budget Remaining</div>
+          <div class="pp-num mt-1 text-lg sm:text-2xl font-bold tracking-tight ${budgetRemain !== null && budgetRemain < 0 ? 'text-rose-500 dark:text-rose-400' : ''}" id="kpi-budget">${budgetRemain !== null ? '₹0.00' : 'Not set'}</div>
+          <div class="pp-num mt-0.5 text-[11px] text-slate-500 dark:text-slate-400 truncate">${summary.overallBudgetPaise > 0 ? `${summary.budgetUsedPercent}% of ${fmtINR(summary.overallBudgetPaise)}` : '<button type="button" class="text-teal-700 dark:text-emerald-400 hover:underline" data-nav="budgets">Set monthly budget</button>'}</div>
         </div>
       </div>
 
-      <!-- 3D Money Intelligence Scenes -->
-      <div class="grid gap-4 lg:grid-cols-2">
-        <div class="pp-card space-y-2.5 p-4">
+      <!-- 3D Ledger Visuals -->
+      <div class="pp-stagger grid gap-4 lg:grid-cols-2">
+        <div class="pp-card pp-card-interactive space-y-2.5 p-4">
           <div class="flex items-center justify-between gap-2">
-            <strong class="text-sm">3D Financial Orb &amp; Budget Ring</strong>
-            <span class="text-[11px] text-slate-400">${state.settings.enable_3d && !state.settings.reduced_motion ? 'Interactive WebGL' : '2D Accessible'}</span>
+            <strong class="text-sm">Balance &amp; Budget Ring</strong>
+            <span class="text-[11px] text-slate-500 dark:text-slate-400">${state.settings.enable_3d && !state.settings.reduced_motion ? 'Interactive 3D' : '2D View'}</span>
           </div>
           <div id="hero-3d-stage" class="scene-stage"></div>
         </div>
-        <div class="pp-card space-y-2.5 p-4">
+        <div class="pp-card pp-card-interactive space-y-2.5 p-4">
           <div class="flex items-center justify-between gap-2">
-            <strong class="text-sm">Category Segment Explorer</strong>
-            <span class="text-[11px] text-slate-400">${summary.categories.length} categories</span>
+            <strong class="text-sm">Category Breakdown</strong>
+            <span class="text-[11px] text-slate-500 dark:text-slate-400">${summary.categories.length} categories</span>
           </div>
           <div id="cat-3d-stage" class="scene-stage"></div>
           <div id="cat-chip-bar" class="flex flex-wrap gap-1.5"></div>
@@ -246,7 +227,7 @@ async function renderDashboardView(root) {
             <div class="flex justify-between text-xs"><span class="text-slate-400">${esc(summary.prevMonthKey)} (Previous)</span><strong>${fmtINR(summary.prevMonthSpentPaise)}</strong></div>
             <div class="h-2 w-full overflow-hidden rounded-full bg-slate-500/20"><div class="h-full rounded-full bg-slate-500" style="width:${prevW}%"></div></div>
             <div class="flex justify-between pt-1 text-xs"><span class="text-slate-400">${esc(summary.monthKey)} (Current)</span><strong>${fmtINR(summary.netSpentPaise)}</strong></div>
-            <div class="h-2 w-full overflow-hidden rounded-full bg-slate-500/20"><div class="h-full rounded-full bg-sky-400" style="width:${curW}%"></div></div>
+            <div class="h-2 w-full overflow-hidden rounded-full bg-slate-500/20"><div class="h-full rounded-full bg-teal-600 dark:bg-emerald-400" style="width:${curW}%"></div></div>
           </div>
           <div class="grid grid-cols-3 gap-2 border-t border-slate-500/15 pt-2.5 text-center text-xs">
             <div><div class="text-slate-400">Income</div><strong class="text-emerald-400">${fmtINR(summary.incomePaise)}</strong></div>
@@ -256,35 +237,35 @@ async function renderDashboardView(root) {
         </div>
       </div>
 
-      <!-- Reconciliation Health & Top Activity -->
+      <!-- Top Merchants & Payment Methods -->
       <div class="grid gap-4 lg:grid-cols-2">
         <div class="pp-card space-y-3 p-4">
           <div class="flex items-center justify-between gap-2">
-            <h3 class="text-sm font-semibold">Reconciliation Status</h3>
-            <button type="button" class="pp-btn pp-btn-ghost pp-btn-sm" data-nav="reconciliation">Open Center</button>
+            <h3 class="text-sm font-semibold">Top Merchants</h3>
+            <button type="button" class="pp-btn pp-btn-ghost pp-btn-sm" data-nav="transactions">View Ledger</button>
           </div>
-          <div class="grid grid-cols-2 gap-2">
-            <div class="pp-pill pp-pill-verified justify-between px-3 py-1.5"><span>Verified</span><span>${summary.reconciliationCounts.verified}</span></div>
-            <div class="pp-pill pp-pill-captured justify-between px-3 py-1.5"><span>Captured</span><span>${summary.reconciliationCounts.captured}</span></div>
-            <div class="pp-pill pp-pill-needs_review justify-between px-3 py-1.5"><span>Needs Review</span><span>${summary.reconciliationCounts.needs_review + recOverview.pendingIngestionEventsCount}</span></div>
-            <div class="pp-pill pp-pill-possible_duplicate justify-between px-3 py-1.5"><span>Duplicates</span><span>${summary.reconciliationCounts.possible_duplicate}</span></div>
-          </div>
+          ${summary.topMerchants.length === 0 ? `
+            <div class="text-xs text-slate-400">Add expenses to see your top merchants.</div>
+          ` : `
+            <div class="space-y-2 text-xs">
+              ${summary.topMerchants.slice(0, 5).map((m) => `
+                <div class="flex justify-between"><span>${esc(m.merchant)} <span class="text-slate-400">(${m.count}x)</span></span><strong>${fmtINR(m.totalPaise)}</strong></div>
+              `).join('')}
+            </div>
+          `}
         </div>
 
         <div class="pp-card space-y-3 p-4">
           <div class="flex items-center justify-between gap-2">
-            <h3 class="text-sm font-semibold">Top Merchants &amp; Upcoming Bills</h3>
-            <button type="button" class="pp-btn pp-btn-ghost pp-btn-sm" data-nav="transactions">View Ledger</button>
+            <h3 class="text-sm font-semibold">Payment Methods</h3>
+            <button type="button" class="pp-btn pp-btn-ghost pp-btn-sm" data-nav="reports">Export</button>
           </div>
-          ${summary.topMerchants.length === 0 && summary.upcomingRecurring.length === 0 ? `
-            <div class="text-xs text-slate-400">Add expenses or recurring schedules to populate this summary.</div>
+          ${summary.paymentMethods.length === 0 ? `
+            <div class="text-xs text-slate-400">No payments recorded in this period.</div>
           ` : `
-            <div class="space-y-1.5 text-xs">
-              ${summary.topMerchants.slice(0, 4).map((m) => `
-                <div class="flex justify-between"><span>${esc(m.merchant)} <span class="text-slate-400">(${m.count})</span></span><strong>${fmtINR(m.totalPaise)}</strong></div>
-              `).join('')}
-              ${summary.upcomingRecurring.slice(0, 2).map((r) => `
-                <div class="flex justify-between border-t border-slate-500/15 pt-1 text-amber-700 dark:text-amber-300"><span>Due: ${esc(r.title)} (${esc(r.next_due_date)})</span><strong>${fmtINR(r.amount_paise)}</strong></div>
+            <div class="space-y-2 text-xs">
+              ${summary.paymentMethods.map((pm) => `
+                <div class="flex justify-between"><span>${esc(pm.method)}</span><strong>${fmtINR(pm.totalPaise)}</strong></div>
               `).join('')}
             </div>
           `}
@@ -347,14 +328,6 @@ async function renderDashboardView(root) {
   });
   root.querySelectorAll('[data-nav]').forEach((el) => {
     el.addEventListener('click', () => navigateTo(el.dataset.nav));
-  });
-  root.querySelector('#btn-dash-ai-go')?.addEventListener('click', async () => {
-    const text = root.querySelector('#dash-ai-quick').value.trim();
-    if (!text) return openTxModal();
-    try {
-      const { draft } = await api('/api/v1/ai/parse-expense', { method: 'POST', body: { text } });
-      openTxModal(null, draft);
-    } catch (e) { showToast(e.message, true); }
   });
 }
 
@@ -629,13 +602,23 @@ document.getElementById('btn-delete-tx').addEventListener('click', async () => {
 });
 
 // --- ROUTER & NAVIGATION ---
+function trigger3DEntrance(el) {
+  if (!el) return;
+  el.classList.remove('pp-view-enter');
+  void el.offsetWidth;
+  el.classList.add('pp-view-enter');
+}
+
 async function renderActiveRoute(route) {
   cleanupAllScenes();
   document.querySelectorAll('.view-section').forEach((s) => s.classList.add('hidden'));
-  document.querySelectorAll('.pp-nav-item').forEach((a) => a.classList.toggle('active', a.dataset.route === route));
+  document.querySelectorAll('.pp-nav-item, .pp-dock-item').forEach((a) => {
+    if (a.dataset.route) a.classList.toggle('active', a.dataset.route === route);
+  });
 
   const target = document.getElementById(`view-${route}`) || document.getElementById('view-dashboard');
   target.classList.remove('hidden');
+  trigger3DEntrance(target);
   document.getElementById('page-title').textContent = ROUTE_TITLES[route] || 'Dashboard';
 
   const refreshAll = () => bootstrapUser().then(() => renderActiveRoute(state.route));
@@ -644,12 +627,8 @@ async function renderActiveRoute(route) {
     if (route === 'dashboard') await renderDashboardView(target);
     else if (route === 'transactions' || route === 'transactions/new') await renderTransactionsView(target);
     else if (route === 'import') await renderImportView(target, refreshAll);
-    else if (route === 'sources') await renderSourcesView(target, refreshAll);
-    else if (route === 'reconciliation') await renderReconciliationView(target, refreshAll);
     else if (route === 'budgets') await renderBudgetsView(target);
     else if (route === 'goals') await renderGoalsView(target);
-    else if (route === 'recurring') await renderRecurringView(target, refreshAll);
-    else if (route === 'insights') await renderInsightsView(target);
     else if (route === 'reports') await renderReportsView(target);
     else if (route === 'email-settings') await renderEmailSettingsView(target);
     else if (route === 'settings') await renderSettingsView(target, refreshAll);
@@ -684,7 +663,10 @@ async function bootstrapUser() {
   applyThemeAndMotion();
   document.getElementById('user-name-label').textContent = me.user.name;
   document.getElementById('user-email-label').textContent = me.user.email;
-  document.getElementById('ai-status-pill').textContent = aiRes.geminiConfigured ? 'Gemini AI: Connected' : 'Smart Rules: Active';
+  const aiPill = document.getElementById('ai-status-pill');
+  if (aiPill) aiPill.textContent = aiRes.geminiConfigured ? 'Gemini AI: Connected' : 'Smart Rules: Active';
+  const chatMode = document.getElementById('ai-chat-mode');
+  if (chatMode) chatMode.textContent = aiRes.geminiConfigured ? 'Assistant Ready · Grounded in ledger' : 'Rule Engine · Grounded in ledger';
 }
 
 // --- AUTH SCREEN WIRING ---
@@ -777,16 +759,19 @@ async function enterApp(initialRoute) {
 }
 
 // Global shell actions
-document.querySelectorAll('.pp-nav-item').forEach((a) => {
+document.querySelectorAll('.pp-nav-item, .pp-dock-item[data-route]').forEach((a) => {
   a.addEventListener('click', (e) => {
     e.preventDefault();
     navigateTo(a.dataset.route);
   });
 });
 
-document.getElementById('btn-quick-add').addEventListener('click', () => openTxModal());
-document.getElementById('btn-open-sidebar').addEventListener('click', () => setSidebarOpen(true));
-document.getElementById('btn-close-sidebar').addEventListener('click', () => setSidebarOpen(false));
+document.getElementById('btn-quick-add')?.addEventListener('click', () => openTxModal());
+document.getElementById('btn-dock-add')?.addEventListener('click', () => openTxModal());
+document.getElementById('btn-open-sidebar')?.addEventListener('click', () => setSidebarOpen(true));
+document.getElementById('btn-mobile-more')?.addEventListener('click', () => setSidebarOpen(true));
+document.getElementById('btn-close-sidebar')?.addEventListener('click', () => setSidebarOpen(false));
+document.getElementById('sidebar-backdrop')?.addEventListener('click', () => setSidebarOpen(false));
 document.getElementById('btn-logout').addEventListener('click', async () => {
   await api('/api/v1/auth/logout', { method: 'POST' });
   window.location.href = '/auth';
@@ -805,10 +790,106 @@ document.getElementById('btn-toggle-3d').addEventListener('click', async () => {
   if (state.route === 'dashboard') renderActiveRoute('dashboard');
 });
 
+// Floating round AI Insights chatbot (bottom-right)
+let aiChatLoaded = false;
+
+function appendChatBubble(role, htmlBody) {
+  const list = document.getElementById('ai-chat-messages');
+  if (!list) return null;
+  const wrap = document.createElement('div');
+  wrap.className = role === 'user' ? 'flex justify-end' : 'flex justify-start';
+  const bubble = document.createElement('div');
+  bubble.className = role === 'user'
+    ? 'max-w-[85%] rounded-2xl rounded-br-sm bg-slate-900 text-white dark:bg-emerald-500 dark:text-slate-950 px-3 py-2 font-medium shadow-sm'
+    : 'max-w-[90%] rounded-2xl rounded-bl-sm border border-slate-500/20 bg-slate-500/10 px-3 py-2 leading-relaxed';
+  bubble.innerHTML = htmlBody;
+  wrap.appendChild(bubble);
+  list.appendChild(wrap);
+  list.scrollTop = list.scrollHeight;
+  return bubble;
+}
+
+async function ensureAiChatBootstrap() {
+  if (aiChatLoaded) return;
+  aiChatLoaded = true;
+  const monthKey = state.monthKey || getTodayInUserTz().slice(0, 7);
+  appendChatBubble('bot', `<strong>Hi ${esc(state.user?.name || 'there')}!</strong> Ask any question about your spending or budgets.`);
+  try {
+    const data = await api(`/api/v1/insights?monthKey=${encodeURIComponent(monthKey)}`);
+    if (data.insights?.length) {
+      const topHtml = data.insights.slice(0, 3).map((ins) => `<div class="mt-1"><strong>${esc(ins.title)}:</strong> ${esc(ins.detail)}</div>`).join('');
+      appendChatBubble('bot', `<span class="text-[11px] font-semibold text-sky-600 dark:text-sky-400">Latest Insights (${esc(data.monthKey)})</span>${topHtml}`);
+    }
+    if (data.recurringCandidates?.length) {
+      const repHtml = data.recurringCandidates.slice(0, 3).map((rc) => `<div class="flex justify-between gap-2 mt-1"><span>${esc(rc.merchant)} (${rc.cnt}x)</span><strong>${fmtINR(rc.amt)}</strong></div>`).join('');
+      appendChatBubble('bot', `<span class="text-[11px] font-semibold text-emerald-600 dark:text-emerald-400">Repeat Merchants</span>${repHtml}`);
+    }
+  } catch {
+    // Non-blocking: chat works even if initial insights summary isn't loaded
+  }
+}
+
+async function askAiChat(question) {
+  const q = String(question || '').trim();
+  if (!q) return;
+  const monthKey = state.monthKey || getTodayInUserTz().slice(0, 7);
+  appendChatBubble('user', esc(q));
+  const pending = appendChatBubble('bot', '<span class="text-slate-400">Analyzing your ledger...</span>');
+  try {
+    const res = await api('/api/v1/ai/ask', { method: 'POST', body: { question: q, monthKey } });
+    if (pending) {
+      pending.innerHTML = `<div class="mb-1 text-[10px] font-semibold uppercase tracking-wide text-sky-600 dark:text-sky-400">${esc(res.source)}</div><div class="whitespace-pre-line">${esc(res.answer)}</div>`;
+    }
+  } catch (err) {
+    if (pending) pending.textContent = err.message;
+  }
+}
+
+document.getElementById('ai-chat-fab')?.addEventListener('click', () => {
+  const panel = document.getElementById('ai-chat-panel');
+  if (!panel) return;
+  const opening = panel.classList.contains('hidden');
+  panel.classList.toggle('hidden', !opening);
+  if (opening) {
+    ensureAiChatBootstrap();
+    document.getElementById('ai-chat-input')?.focus();
+  }
+});
+
+document.getElementById('btn-close-ai-chat')?.addEventListener('click', () => {
+  document.getElementById('ai-chat-panel')?.classList.add('hidden');
+});
+
+document.querySelectorAll('.ai-chat-chip').forEach((btn) => {
+  btn.addEventListener('click', () => {
+    ensureAiChatBootstrap().then(() => askAiChat(btn.dataset.q));
+  });
+});
+
+document.getElementById('ai-chat-form')?.addEventListener('submit', (e) => {
+  e.preventDefault();
+  const inp = document.getElementById('ai-chat-input');
+  const q = inp.value;
+  inp.value = '';
+  ensureAiChatBootstrap().then(() => askAiChat(q));
+});
+
 window.addEventListener('popstate', () => {
   const pathRoute = window.location.pathname.replace(/^\/+/, '') || 'dashboard';
   if (state.user) navigateTo(pathRoute, false);
 });
+
+function dismissLaunchSplash() {
+  const splash = document.getElementById('pp-launch-splash');
+  if (!splash) return;
+  const reduced = document.documentElement.dataset.reducedMotion === 'true'
+    || window.matchMedia?.('(prefers-reduced-motion: reduce)').matches;
+  const delay = reduced ? 0 : 520;
+  setTimeout(() => {
+    splash.classList.add('is-leaving');
+    setTimeout(() => splash.remove(), reduced ? 0 : 400);
+  }, delay);
+}
 
 // Boot
 (async () => {
@@ -818,5 +899,7 @@ window.addEventListener('popstate', () => {
   } catch {
     document.getElementById('app-shell').classList.add('hidden');
     document.getElementById('auth-shell').classList.remove('hidden');
+  } finally {
+    dismissLaunchSplash();
   }
 })();
