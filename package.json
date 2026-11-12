@@ -4,6 +4,7 @@
   "description": "PaisaPilot - Personal Expense Tracker, PhonePe/UPI Reconciliation, 3D Money Intelligence, Gemini AI & Brevo 11 PM Daily Digest",
   "main": "server.js",
   "scripts": {
+    "build": "echo 'No build step required for serverless Express'",
     "start": "node server.js",
     "dev": "node --watch server.js",
     "build:css": "tailwindcss -i ./src/tailwind.css -o ./public/css/app.css --minify",
