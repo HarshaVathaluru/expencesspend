@@ -301,11 +301,17 @@ export async function renderBudgetsView(root) {
   const limitMap = new Map((data.categoryLimits || []).map((l) => [l.category_id, l.limit_paise]));
   const overall = data.budget?.overall_limit_paise || 0;
   const pct = overall > 0 ? Math.min(100, Math.round((data.netSpentPaise / overall) * 100)) : 0;
+  const [bYr, bMo] = String(data.monthKey || monthKey).split('-').map(Number);
+  const daysInMonth = bYr && bMo ? new Date(bYr, bMo, 0).getDate() : 30;
+  const dailyAvgPaise = overall > 0 ? Math.round(overall / daysInMonth) : 0;
 
   root.innerHTML = `
     <div class="pp-card space-y-4 p-4">
       <div class="flex flex-wrap items-center justify-between gap-2">
-        <h3 class="text-sm font-semibold">Monthly Budget (${esc(data.monthKey)})</h3>
+        <div>
+          <h3 class="text-sm font-semibold">Monthly &amp; Daily Avg Budget (${esc(data.monthKey)})</h3>
+          <div class="text-xs text-slate-400">Daily Avg Budget: <strong id="budget-daily-avg-label" class="text-emerald-400">${dailyAvgPaise > 0 ? `${fmtINR(dailyAvgPaise)} / day` : 'Set monthly budget'}</strong> (${daysInMonth} days)</div>
+        </div>
         <strong class="text-sm">${overall > 0 ? `${fmtINR(data.netSpentPaise)} / ${fmtINR(overall)} (${pct}%)` : 'Not configured'}</strong>
       </div>
       <div class="h-2.5 w-full overflow-hidden rounded-full bg-slate-500/20">
