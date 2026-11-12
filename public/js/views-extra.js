@@ -550,7 +550,10 @@ export async function renderEmailSettingsView(root) {
   root.querySelector('#btn-verify-email').addEventListener('click', async () => {
     const email = root.querySelector('[name="email_recipient"]').value;
     const res = await api('/api/v1/email/verify/request', { method: 'POST', body: { email_recipient: email } });
-    root.querySelector('#verify-code-box').classList.remove('hidden');
+    const box = root.querySelector('#verify-code-box');
+    const inp = root.querySelector('#verify-code-input');
+    box.classList.remove('hidden');
+    if (res.verificationCodePreview && inp) inp.value = res.verificationCodePreview;
     showToast(`Confirmation code issued: ${res.verificationCodePreview}`);
   });
 
