@@ -45,7 +45,8 @@ function createApp() {
   app.use(cookieParser());
 
   // Static assets & local Three.js vendor bundle (same origin, zero CDN dependency)
-  app.use(express.static(path.join(__dirname, 'public'), {
+  const publicDir = path.resolve(process.cwd(), 'public');
+  app.use(express.static(publicDir, {
     maxAge: '1h',
     setHeaders: (res, filePath) => {
       if (/\.(css|js|html)$/i.test(filePath)) {
@@ -53,7 +54,7 @@ function createApp() {
       }
     }
   }));
-  app.use('/vendor/three', express.static(path.join(__dirname, 'node_modules/three/build'), { maxAge: '7d' }));
+  app.use('/vendor/three', express.static(path.resolve(process.cwd(), 'node_modules/three/build'), { maxAge: '7d' }));
 
   // Health endpoint (verifies readiness without exposing any secrets)
   app.get('/health', async (req, res) => {
@@ -85,7 +86,7 @@ function createApp() {
   });
 
   // Serve unified single-origin UI shell for all app views
-  const indexHtml = path.join(__dirname, 'views', 'index.html');
+  const indexHtml = path.resolve(process.cwd(), 'views', 'index.html');
   const spaRoutes = [
     '/',
     '/auth',
