@@ -189,25 +189,6 @@ async function renderDashboardView(root) {
         </div>
       </div>
 
-      <!-- 3D Ledger Visuals -->
-      <div class="pp-stagger grid gap-4 lg:grid-cols-2">
-        <div class="pp-card pp-card-interactive space-y-2.5 p-4">
-          <div class="flex items-center justify-between gap-2">
-            <strong class="text-sm">Balance &amp; Budget Ring</strong>
-            <span class="text-[11px] text-slate-500 dark:text-slate-400">${state.settings.enable_3d && !state.settings.reduced_motion ? 'Interactive 3D' : '2D View'}</span>
-          </div>
-          <div id="hero-3d-stage" class="scene-stage"></div>
-        </div>
-        <div class="pp-card pp-card-interactive space-y-2.5 p-4">
-          <div class="flex items-center justify-between gap-2">
-            <strong class="text-sm">Category Breakdown</strong>
-            <span class="text-[11px] text-slate-500 dark:text-slate-400">${summary.categories.length} categories</span>
-          </div>
-          <div id="cat-3d-stage" class="scene-stage"></div>
-          <div id="cat-chip-bar" class="flex flex-wrap gap-1.5"></div>
-        </div>
-      </div>
-
       <!-- Trend & Monthly Comparison -->
       <div class="grid gap-4 lg:grid-cols-2">
         <div class="pp-card space-y-2 p-4">
@@ -278,37 +259,6 @@ async function renderDashboardView(root) {
   animateCountUp(root.querySelector('#kpi-month'), summary.netSpentPaise);
   animateCountUp(root.querySelector('#kpi-income'), summary.incomePaise);
   if (budgetRemain !== null) animateCountUp(root.querySelector('#kpi-budget'), budgetRemain);
-
-  mountDashboardHero3D(root.querySelector('#hero-3d-stage'), summary, {
-    enable3d: state.settings.enable_3d,
-    reducedMotion: state.settings.reduced_motion
-  });
-
-  const chipBar = root.querySelector('#cat-chip-bar');
-  const selectCat = (cat) => {
-    chipBar.querySelectorAll('.cat-chip').forEach((el) => {
-      const isAct = el.dataset.slug === cat.slug;
-      el.classList.toggle('border-sky-400', isAct);
-      el.classList.toggle('bg-sky-500/15', isAct);
-      el.classList.toggle('text-sky-400', isAct);
-    });
-    showToast(`${cat.name}: ${fmtINR(cat.totalPaise)} (${cat.sharePercent}%, ${cat.count} txns)`);
-  };
-  if (summary.categories.length > 0) {
-    chipBar.innerHTML = summary.categories.slice(0, 6).map((c, idx) => `
-      <button type="button" class="pp-surface-sub cat-chip flex items-center gap-1.5 px-2.5 py-1 text-xs font-medium transition ${idx === 0 ? 'border-sky-400 bg-sky-500/15 text-sky-400' : ''}" data-slug="${esc(c.slug)}">
-        <img src="${c.iconPath}" alt="" width="16" height="16">
-        <span>${esc(c.name)}</span>
-      </button>
-    `).join('');
-    chipBar.querySelectorAll('.cat-chip').forEach((btn, idx) => {
-      btn.addEventListener('click', () => selectCat(summary.categories[idx]));
-    });
-  }
-  mountCategoryExplorer3D(root.querySelector('#cat-3d-stage'), summary.categories, selectCat, {
-    enable3d: state.settings.enable_3d,
-    reducedMotion: state.settings.reduced_motion
-  });
 
   root.querySelectorAll('[data-preset]').forEach((b) => {
     b.addEventListener('click', () => {
