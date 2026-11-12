@@ -9,6 +9,7 @@ async function getApp() {
       try {
         await db.initDatabase();
       } catch (err) {
+        appPromise = null; // allow retry on subsequent requests
         console.error('[PaisaPilot Vercel DB Init Error]:', err);
         throw err;
       }

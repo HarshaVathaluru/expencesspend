@@ -1,5 +1,6 @@
 require('dotenv').config();
 const path = require('path');
+const fs = require('fs');
 const express = require('express');
 const cookieParser = require('cookie-parser');
 const helmet = require('helmet');
@@ -45,7 +46,9 @@ function createApp() {
   app.use(cookieParser());
 
   // Static assets & local Three.js vendor bundle (same origin, zero CDN dependency)
-  const publicDir = path.resolve(process.cwd(), 'public');
+  const publicDir = fs.existsSync(path.join(__dirname, 'public'))
+    ? path.join(__dirname, 'public')
+    : path.resolve(process.cwd(), 'public');
   app.use(express.static(publicDir, {
     maxAge: '1h',
     setHeaders: (res, filePath) => {
@@ -54,7 +57,10 @@ function createApp() {
       }
     }
   }));
-  app.use('/vendor/three', express.static(path.resolve(process.cwd(), 'node_modules/three/build'), { maxAge: '7d' }));
+  const vendorThreeDir = fs.existsSync(path.join(__dirname, 'node_modules/three/build'))
+    ? path.join(__dirname, 'node_modules/three/build')
+    : path.resolve(process.cwd(), 'node_modules/three/build');
+  app.use('/vendor/three', express.static(vendorThreeDir, { maxAge: '7d' }));
 
   // Health endpoint (verifies readiness without exposing any secrets)
   app.get('/health', async (req, res) => {
@@ -86,7 +92,9 @@ function createApp() {
   });
 
   // Serve unified single-origin UI shell for all app views
-  const indexHtml = path.resolve(process.cwd(), 'views', 'index.html');
+  const indexHtml = fs.existsSync(path.join(__dirname, 'views', 'index.html'))
+    ? path.join(__dirname, 'views', 'index.html')
+    : path.resolve(process.cwd(), 'views', 'index.html');
   const spaRoutes = [
     '/',
     '/auth',
