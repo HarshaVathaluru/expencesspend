@@ -257,12 +257,20 @@ test('8. Payment image preview, 4-day summary cadence, and immediate budget exce
   assert.equal(overTx.status, 201);
 
   const alertLog = await db.get(
-    `SELECT report_type, idempotency_key FROM email_delivery_logs WHERE user_id = ? AND report_type = 'budget_exceeded' ORDER BY created_at DESC LIMIT 1`,
+    `SELECT report_type, status, idempotency_key, response_json FROM email_delivery_logs WHERE user_id = ? AND report_type = 'budget_exceeded' ORDER BY created_at DESC LIMIT 1`,
     [userIdA]
   );
   assert.ok(alertLog);
   assert.equal(alertLog.report_type, 'budget_exceeded');
+  assert.equal(alertLog.status, 'queued');
   assert.equal(alertLog.idempotency_key, `${userIdA}:${activeMonth}:overall_budget_exceeded`);
+  const meta = JSON.parse(alertLog.response_json || '{}');
+  const delayMs = new Date(meta.sendAfter).getTime() - Date.now();
+  assert.ok(delayMs > 50 * 60 * 1000 && delayMs <= 61 * 60 * 1000, 'Budget alert should be scheduled ~1 hour later');
+
+  const previewRes = await agentA.get('/api/v1/email/preview');
+  assert.equal(previewRes.status, 200);
+  assert.ok(previewRes.body.budgetAlertHtml && previewRes.body.budgetAlertHtml.includes('Budget Alert'));
 });
 
 test('9. User custom categories CRUD and auto-creation during CSV upload', async () => {

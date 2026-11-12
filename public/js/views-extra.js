@@ -510,7 +510,7 @@ export async function renderEmailSettingsView(root) {
       <div class="grid gap-4 lg:grid-cols-2">
         <div class="pp-card space-y-3 p-4">
           <h3 class="text-sm font-semibold">4-Day Expenses &amp; Budget Alert Settings</h3>
-          <p class="text-xs text-slate-400">Receive a 4-day expenses summary every 4 days, plus immediate email alerts whenever your monthly or category budget is exceeded.</p>
+          <p class="text-xs text-slate-400">Receive a 4-day expenses summary every 4 days, plus a budget-exceeded alert email 1 hour after uploading a bill that crosses your budget.</p>
           <form id="form-email-cfg" class="space-y-3">
             <label class="pp-label">Recipient Email
               <input type="email" name="email_recipient" value="${esc(emailCfg.settings.email_recipient)}" required class="pp-input mt-1">
@@ -548,8 +548,14 @@ export async function renderEmailSettingsView(root) {
         </div>
 
         <div class="pp-card space-y-3 p-4">
-          <h3 class="text-sm font-semibold">Live 4-Day Digest Preview</h3>
-          <iframe title="4-Day Expenses Email Preview" srcdoc="${esc(preview.html)}" class="h-[360px] w-full rounded-xl border border-slate-500/20 bg-slate-950"></iframe>
+          <div class="flex flex-wrap items-center justify-between gap-2">
+            <h3 class="text-sm font-semibold">Live Email Template Preview</h3>
+            <div class="flex gap-1.5">
+              <button type="button" class="pp-btn pp-btn-primary pp-btn-sm" id="btn-prev-digest">4-Day Digest</button>
+              <button type="button" class="pp-btn pp-btn-secondary pp-btn-sm" id="btn-prev-alert">Budget Alert (1 hr)</button>
+            </div>
+          </div>
+          <iframe id="email-preview-frame" title="PaisaPilot Email Preview" srcdoc="${esc(preview.html)}" class="h-[380px] w-full rounded-xl border border-slate-500/20 bg-slate-100"></iframe>
         </div>
       </div>
 
@@ -577,6 +583,20 @@ export async function renderEmailSettingsView(root) {
       </div>
     </div>
   `;
+
+  const previewFrame = root.querySelector('#email-preview-frame');
+  const btnPrevDigest = root.querySelector('#btn-prev-digest');
+  const btnPrevAlert = root.querySelector('#btn-prev-alert');
+  btnPrevDigest?.addEventListener('click', () => {
+    if (previewFrame) previewFrame.srcdoc = preview.html;
+    btnPrevDigest.className = 'pp-btn pp-btn-primary pp-btn-sm';
+    if (btnPrevAlert) btnPrevAlert.className = 'pp-btn pp-btn-secondary pp-btn-sm';
+  });
+  btnPrevAlert?.addEventListener('click', () => {
+    if (previewFrame && preview.budgetAlertHtml) previewFrame.srcdoc = preview.budgetAlertHtml;
+    btnPrevAlert.className = 'pp-btn pp-btn-primary pp-btn-sm';
+    if (btnPrevDigest) btnPrevDigest.className = 'pp-btn pp-btn-secondary pp-btn-sm';
+  });
 
   root.querySelector('#btn-verify-email').addEventListener('click', async () => {
     const email = root.querySelector('[name="email_recipient"]').value;

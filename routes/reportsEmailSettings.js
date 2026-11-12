@@ -197,8 +197,11 @@ router.get('/email/preview', async (req, res, next) => {
   try {
     const tz = req.userSettings.timezone || 'Asia/Kolkata';
     const localDate = req.query.date || getDatePartsInTz(new Date(), tz).localDate;
-    const data = await brevo.buildDailySummaryData(req.user.id, localDate, tz);
-    res.json(data);
+    const [data, budgetAlertHtml] = await Promise.all([
+      brevo.buildDailySummaryData(req.user.id, localDate, tz),
+      brevo.buildBudgetAlertPreviewHtml(req.user.id, tz)
+    ]);
+    res.json({ ...data, budgetAlertHtml });
   } catch (err) {
     next(err);
   }
