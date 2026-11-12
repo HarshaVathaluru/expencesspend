@@ -16,7 +16,7 @@ const ROUTE_TITLES = {
   budgets: 'Budgets & Category Limits',
   goals: 'Savings Goals',
   reports: 'Reports & Exports',
-  'email-settings': '4-Day & Budget Alert Emails',
+  'email-settings': 'Sunday & Budget Alert Emails',
   settings: 'Settings, Privacy & Security'
 };
 

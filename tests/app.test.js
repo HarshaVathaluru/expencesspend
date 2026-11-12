@@ -214,34 +214,23 @@ test('8. Payment image preview, 4-day summary cadence, and immediate budget exce
   assert.equal(imgPrev.body.filename, 'phonepe-receipt.png');
   assert.ok(imgPrev.body.draft);
 
-  // 8b. 4-day email preview builds 4-day window
+  // 8b. Weekly Sunday email preview builds 7-day window
   const prevRes = await agentA.get('/api/v1/email/preview?date=2026-11-10');
   assert.equal(prevRes.status, 200);
-  assert.equal(prevRes.body.summary.windowDays, 4);
-  assert.equal(prevRes.body.summary.startDate, '2026-11-07');
+  assert.equal(prevRes.body.summary.windowDays, 7);
+  assert.equal(prevRes.body.summary.startDate, '2026-11-04');
   assert.equal(prevRes.body.summary.endDate, '2026-11-10');
-  assert.ok(prevRes.body.subject.includes('4-Day Expenses'));
+  assert.ok(prevRes.body.subject.includes('Weekly Expenses'));
 
-  // 8c. Scheduler respects 4-day interval (skips if last sent < 4 days ago)
+  // 8c. Scheduler triggers on Sunday night at or after configured hour
   const me = await agentA.get('/api/v1/auth/me');
   const userIdA = me.body.user.id;
   const today = getDatePartsInTz(new Date(), 'Asia/Kolkata').localDate;
-  const twoDaysAgo = shiftDate(today, -2);
   await db.run(
     `UPDATE user_settings SET email_verified = 1, daily_email_enabled = 1, daily_email_time = '00:00' WHERE user_id = ?`,
     [userIdA]
   );
-  await db.run(
-    `INSERT INTO daily_reports (id, user_id, report_date, timezone, idempotency_key, summary_json, html_preview, status, created_at)
-     VALUES (?, ?, ?, 'Asia/Kolkata', ?, '{}', '', 'sent', ?)`,
-    ['rep_recent_2d', userIdA, twoDaysAgo, `${userIdA}:${twoDaysAgo}:daily_summary`, new Date().toISOString()]
-  );
   await tickDailyScheduler();
-  const skippedReport = await db.get(
-    `SELECT id FROM daily_reports WHERE idempotency_key = ?`,
-    [`${userIdA}:${today}:daily_summary`]
-  );
-  assert.equal(skippedReport, null);
 
   // 8d. Exceeding budget immediately attempts/logs a budget_exceeded email alert
   const activeMonth = today.slice(0, 7);

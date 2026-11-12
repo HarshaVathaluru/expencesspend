@@ -515,8 +515,8 @@ export async function renderEmailSettingsView(root) {
 
       <div class="grid gap-4 lg:grid-cols-2">
         <div class="pp-card space-y-3 p-4">
-          <h3 class="text-sm font-semibold">4-Day Expenses &amp; Budget Alert Settings</h3>
-          <p class="text-xs text-slate-400">Receive a 4-day expenses summary every 4 days, plus a budget-exceeded alert email 1 hour after uploading a bill that crosses your budget.</p>
+          <h3 class="text-sm font-semibold">Sunday Night Expenses &amp; Budget Alert Settings</h3>
+          <p class="text-xs text-slate-400">Receive your weekly expenses digest every Sunday night at 11:00 PM, plus a budget alert 1 hour after uploading a bill that crosses your daily budget.</p>
           <form id="form-email-cfg" class="space-y-3">
             <label class="pp-label">Recipient Email
               <input type="email" name="email_recipient" value="${esc(emailCfg.settings.email_recipient)}" required class="pp-input mt-1">
@@ -532,8 +532,8 @@ export async function renderEmailSettingsView(root) {
               <button type="button" class="pp-btn pp-btn-primary pp-btn-sm" id="btn-confirm-code">Verify</button>
             </div>
             <div class="grid gap-3 sm:grid-cols-2">
-              <label class="pp-label">Digest Delivery Time (Every 4 Days)
-                <input type="time" name="daily_email_time" value="${esc(emailCfg.settings.daily_email_time)}" class="pp-input mt-1">
+              <label class="pp-label">Sunday Delivery Time
+                <input type="time" name="daily_email_time" value="${esc(emailCfg.settings.daily_email_time || '23:00')}" class="pp-input mt-1">
               </label>
               <label class="pp-label">Timezone
                 <select name="timezone" class="pp-input mt-1">
@@ -543,12 +543,12 @@ export async function renderEmailSettingsView(root) {
             </div>
             <label class="flex items-center gap-2 text-xs">
               <input type="checkbox" name="daily_email_enabled" ${emailCfg.settings.daily_email_enabled ? 'checked' : ''}>
-              <span>Enable automatic 4-day expenses summary email</span>
+              <span>Enable automatic Sunday night expenses email (11:00 PM)</span>
             </label>
             <div class="flex flex-wrap gap-2">
               <button type="submit" class="pp-btn pp-btn-primary pp-btn-sm">Save Schedule</button>
               <button type="button" class="pp-btn pp-btn-secondary pp-btn-sm" id="btn-send-test">Send Test</button>
-              <button type="button" class="pp-btn pp-btn-ghost pp-btn-sm" id="btn-send-today">Send 4-Day Report Now</button>
+              <button type="button" class="pp-btn pp-btn-ghost pp-btn-sm" id="btn-send-today">Send Weekly Digest Now</button>
             </div>
           </form>
         </div>
@@ -557,7 +557,7 @@ export async function renderEmailSettingsView(root) {
           <div class="flex flex-wrap items-center justify-between gap-2">
             <h3 class="text-sm font-semibold">Live Email Template Preview</h3>
             <div class="flex gap-1.5">
-              <button type="button" class="pp-btn pp-btn-primary pp-btn-sm" id="btn-prev-digest">4-Day Digest</button>
+              <button type="button" class="pp-btn pp-btn-primary pp-btn-sm" id="btn-prev-digest">Sunday Digest</button>
               <button type="button" class="pp-btn pp-btn-secondary pp-btn-sm" id="btn-prev-alert">Budget Alert (1 hr)</button>
             </div>
           </div>
