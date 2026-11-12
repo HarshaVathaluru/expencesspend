@@ -6,7 +6,7 @@ const { z } = require('zod');
 const db = require('../lib/db');
 const { newId } = require('../lib/crypto');
 const { requireAuth } = require('../lib/auth');
-const { getUserCategories } = require('../lib/categories');
+const { getUserCategories, ensureOrCreateCategory } = require('../lib/categories');
 const txService = require('../lib/transactions');
 
 const router = express.Router();
@@ -73,17 +73,37 @@ router.post('/categories', async (req, res, next) => {
   try {
     const name = String(req.body?.name || '').trim();
     const kind = ['expense', 'income', 'transfer', 'savings'].includes(req.body?.kind) ? req.body.kind : 'expense';
-    const color = /^#[0-9A-Fa-f]{6}$/.test(req.body?.color || '') ? req.body.color : '#38BDF8';
+    const color = /^#[0-9A-Fa-f]{6}$/.test(req.body?.color || '') ? req.body.color : null;
     if (name.length < 2 || name.length > 40) return res.status(400).json({ error: 'Category name must be 2-40 characters' });
-    const slug = name.toLowerCase().replace(/[^a-z0-9]+/g, '_').replace(/^_|_$/g, '');
-    const id = newId('cat');
-    await db.run(
-      `INSERT INTO categories (id, user_id, slug, name, kind, color, icon_path, is_system, created_at)
-       VALUES (?, ?, ?, ?, ?, ?, '/images/categories/uncategorized.svg', 0, ?)`,
-      [id, req.user.id, `${slug}_${id.slice(-4)}`, name, kind, color, new Date().toISOString()]
+    const result = await ensureOrCreateCategory(req.user.id, { name, kind, color });
+    if (!result) return res.status(400).json({ error: 'Invalid category name' });
+    res.status(result.created ? 201 : 200).json({ category: result.category, created: result.created });
+  } catch (err) {
+    next(err);
+  }
+});
+
+router.delete('/categories/:id', async (req, res, next) => {
+  try {
+    const cat = await db.get(
+      `SELECT id, slug, name FROM categories WHERE id = ? AND user_id = ?`,
+      [req.params.id, req.user.id]
     );
-    const created = await db.get(`SELECT * FROM categories WHERE id = ?`, [id]);
-    res.status(201).json({ category: created });
+    if (!cat) return res.status(404).json({ error: 'Category not found' });
+    if (cat.slug === 'uncategorized') {
+      return res.status(400).json({ error: 'Uncategorized fallback cannot be deleted' });
+    }
+    const fallback = await db.get(
+      `SELECT id FROM categories WHERE user_id = ? AND slug = 'uncategorized' LIMIT 1`,
+      [req.user.id]
+    );
+    const fallbackId = fallback?.id || null;
+    await db.run(`UPDATE transactions SET category_id = ? WHERE user_id = ? AND category_id = ?`, [fallbackId, req.user.id, cat.id]);
+    await db.run(`UPDATE transaction_splits SET category_id = ? WHERE user_id = ? AND category_id = ?`, [fallbackId, req.user.id, cat.id]);
+    await db.run(`DELETE FROM budget_categories WHERE user_id = ? AND category_id = ?`, [req.user.id, cat.id]);
+    await db.run(`DELETE FROM merchant_category_rules WHERE user_id = ? AND category_id = ?`, [req.user.id, cat.id]);
+    await db.run(`DELETE FROM categories WHERE id = ? AND user_id = ?`, [cat.id, req.user.id]);
+    res.json({ deleted: true, id: cat.id });
   } catch (err) {
     next(err);
   }

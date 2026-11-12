@@ -7,6 +7,7 @@ const { requireAuth } = require('../lib/auth');
 const ingestion = require('../lib/ingestion');
 const { parsePaymentImage } = require('../lib/ai');
 const { getDatePartsInTz } = require('../lib/money');
+const { getUserCategories } = require('../lib/categories');
 const { createTransaction } = require('../lib/transactions');
 const { recordAudit } = require('../lib/audit');
 
@@ -261,11 +262,13 @@ router.post('/ingestion/import/image-preview', upload.single('file'), async (req
       todayLocalDate
     });
 
+    const categories = await getUserCategories(req.user.id);
     res.json({
       filename: req.file.originalname,
       mimeType: normalizedMime,
       detected: draft.detected,
-      draft
+      draft,
+      categories
     });
   } catch (err) {
     next(err);

@@ -264,3 +264,57 @@ test('8. Payment image preview, 4-day summary cadence, and immediate budget exce
   assert.equal(alertLog.report_type, 'budget_exceeded');
   assert.equal(alertLog.idempotency_key, `${userIdA}:${activeMonth}:overall_budget_exceeded`);
 });
+
+test('9. User custom categories CRUD and auto-creation during CSV upload', async () => {
+  // Create custom category
+  const createCat = await agentA.post('/api/v1/categories').send({
+    name: 'Pet Care',
+    kind: 'expense',
+    color: '#F97316'
+  });
+  assert.equal(createCat.status, 201);
+  assert.equal(createCat.body.category.name, 'Pet Care');
+  assert.equal(createCat.body.category.is_system, 0);
+
+  // Duplicate name returns existing without creating a second row
+  const dupCat = await agentA.post('/api/v1/categories').send({
+    name: 'pet care',
+    kind: 'expense'
+  });
+  assert.equal(dupCat.status, 200);
+  assert.equal(dupCat.body.created, false);
+  assert.equal(dupCat.body.category.id, createCat.body.category.id);
+
+  // CSV upload with a brand new Category column auto-creates "Gym & Fitness"
+  const commitRes = await agentA.post('/api/v1/ingestion/import/commit').send({
+    sourceType: 'csv',
+    filename: 'custom-cat.csv',
+    mapping: {
+      date: 'Date',
+      merchant: 'Merchant',
+      amount: 'Amount',
+      type: 'Type',
+      category: 'Category'
+    },
+    rows: [
+      {
+        Date: '2026-11-12',
+        Merchant: 'CultFit Club',
+        Amount: '1500.00',
+        Type: 'Debit',
+        Category: 'Gym & Fitness'
+      }
+    ]
+  });
+  assert.equal(commitRes.status, 200);
+  assert.equal(commitRes.body.importedRows, 1);
+
+  const catsAfter = await agentA.get('/api/v1/categories');
+  const gymCat = catsAfter.body.categories.find((c) => c.name === 'Gym & Fitness');
+  assert.ok(gymCat, 'Gym & Fitness category should be auto-created on upload');
+
+  // Delete custom category
+  const delCat = await agentA.delete(`/api/v1/categories/${createCat.body.category.id}`);
+  assert.equal(delCat.status, 200);
+  assert.equal(delCat.body.deleted, true);
+});

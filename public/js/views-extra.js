@@ -107,10 +107,17 @@ export async function renderImportView(root, onRefreshAll) {
                     ${paymentMethods.map((m) => `<option value="${m}" ${imageDraft.paymentMethod === m ? 'selected' : ''}>${m}</option>`).join('')}
                   </select>
                 </label>
-                <label class="pp-label">Category
-                  <select name="categoryId" class="pp-input mt-1">
-                    ${(state.categories || []).map((c) => `<option value="${c.id}" ${imageDraft.categoryId === c.id ? 'selected' : ''}>${esc(c.name)}</option>`).join('')}
-                  </select>
+                <label class="pp-label">Category ${imageDraft.autoCreatedCategory ? `<span class="ml-1 text-[10px] text-emerald-400">(Auto-added)</span>` : ''}
+                  <div class="mt-1 flex gap-1.5">
+                    <select name="categoryId" id="img-tx-cat" class="pp-input flex-1">
+                      ${(state.categories || []).map((c) => `<option value="${c.id}" ${imageDraft.categoryId === c.id ? 'selected' : ''}>${esc(c.name)}</option>`).join('')}
+                    </select>
+                    <button type="button" class="pp-btn pp-btn-ghost pp-btn-sm shrink-0" id="btn-img-add-cat" title="Add custom category">+</button>
+                  </div>
+                  <div id="img-new-cat-row" class="mt-1.5 hidden flex gap-1.5">
+                    <input type="text" id="img-new-cat-name" placeholder="New category name" maxlength="40" class="pp-input text-xs">
+                    <button type="button" class="pp-btn pp-btn-secondary pp-btn-sm shrink-0" id="btn-img-new-cat-save">Add</button>
+                  </div>
                 </label>
                 <label class="pp-label">Date
                   <input type="date" name="localDate" required value="${esc(imageDraft.localDate || getTodayInUserTz())}" class="pp-input mt-1">
@@ -136,8 +143,8 @@ export async function renderImportView(root, onRefreshAll) {
               <h3 class="text-sm font-semibold">Preview &amp; Column Mapping (${previewData.totalRows} rows in ${esc(previewData.filename)})</h3>
               <button type="button" class="pp-btn pp-btn-primary pp-btn-sm" id="btn-imp-commit">Commit ${previewData.totalRows} Row(s)</button>
             </div>
-            <div class="grid gap-2.5 sm:grid-cols-3 lg:grid-cols-6">
-              ${['date', 'merchant', 'amount', 'type', 'paymentMethod', 'reference'].map((field) => `
+            <div class="grid gap-2.5 sm:grid-cols-4 lg:grid-cols-7">
+              ${['date', 'merchant', 'amount', 'type', 'category', 'paymentMethod', 'reference'].map((field) => `
                 <label class="pp-label">${field}
                   <select class="pp-input imp-map-select mt-1" data-field="${field}">
                     <option value="">(None)</option>
@@ -173,11 +180,15 @@ export async function renderImportView(root, onRefreshAll) {
         if (isImg) {
           showToast('Detecting payment details from image...');
           const res = await api('/api/v1/ingestion/import/image-preview', { method: 'POST', body: fd });
+          if (Array.isArray(res.categories)) state.categories = res.categories;
           revokePreview();
           imageFile = f;
           imagePreviewUrl = URL.createObjectURL(f);
           imageDraft = res.draft;
           previewData = null;
+          if (res.draft?.autoCreatedCategory) {
+            showToast(`Auto-added category: ${res.draft.categoryName}`);
+          }
           render();
         } else {
           revokePreview();
@@ -207,6 +218,26 @@ export async function renderImportView(root, onRefreshAll) {
       imageDraft = null;
       imageFile = null;
       render();
+    });
+
+    root.querySelector('#btn-img-add-cat')?.addEventListener('click', () => {
+      const row = root.querySelector('#img-new-cat-row');
+      row?.classList.toggle('hidden');
+      if (!row?.classList.contains('hidden')) root.querySelector('#img-new-cat-name')?.focus();
+    });
+
+    root.querySelector('#btn-img-new-cat-save')?.addEventListener('click', async () => {
+      const input = root.querySelector('#img-new-cat-name');
+      const name = (input?.value || '').trim();
+      if (name.length < 2) return showToast('Enter at least 2 characters for category name', true);
+      try {
+        const res = await api('/api/v1/categories', { method: 'POST', body: { name, kind: imageDraft?.type === 'income' ? 'income' : 'expense' } });
+        const catRes = await api('/api/v1/categories');
+        state.categories = catRes.categories;
+        if (res.category?.id && imageDraft) imageDraft.categoryId = res.category.id;
+        showToast(res.created ? `Category "${res.category.name}" added` : `Selected "${res.category.name}"`);
+        render();
+      } catch (err) { showToast(err.message, true); }
     });
 
     root.querySelector('#form-img-tx')?.addEventListener('submit', async (e) => {
@@ -601,11 +632,13 @@ export async function renderEmailSettingsView(root) {
 // 14. SETTINGS, PRIVACY & RULES
 export async function renderSettingsView(root, onRefreshAll) {
   root.innerHTML = `<div class="skeleton h-40"></div>`;
-  const [cfg, rulesRes, auditRes] = await Promise.all([
+  const [cfg, rulesRes, auditRes, catRes] = await Promise.all([
     api('/api/v1/settings'),
     api('/api/v1/rules'),
-    api('/api/v1/audit-logs')
+    api('/api/v1/audit-logs'),
+    api('/api/v1/categories')
   ]);
+  state.categories = catRes.categories || state.categories;
 
   root.innerHTML = `
     <div class="space-y-4">
@@ -657,6 +690,37 @@ export async function renderSettingsView(root, onRefreshAll) {
               </div>
             `).join('') || '<div class="py-2 text-xs text-slate-400">No custom rules yet.</div>'}
           </div>
+        </div>
+      </div>
+
+      <div class="pp-card space-y-3 p-4">
+        <div class="flex flex-wrap items-center justify-between gap-2">
+          <div>
+            <h3 class="text-sm font-semibold">Custom Categories (Your Preferences)</h3>
+            <p class="text-xs text-slate-400">Add your own categories or remove unused ones. Uploaded receipts and statements also auto-add new categories.</p>
+          </div>
+          <span class="text-xs text-slate-400">${state.categories.length} total</span>
+        </div>
+        <form id="form-new-category" class="flex flex-wrap items-center gap-2">
+          <input type="text" name="name" placeholder="Category name (e.g. Fuel, Gym, Coffee)" required maxlength="40" class="pp-input flex-1 text-xs">
+          <select name="kind" class="pp-input w-32 text-xs">
+            <option value="expense">Expense</option>
+            <option value="income">Income</option>
+            <option value="savings">Savings</option>
+            <option value="transfer">Transfer</option>
+          </select>
+          <input type="color" name="color" value="#10B981" title="Category color" class="h-8 w-10 cursor-pointer rounded border border-slate-500/30 bg-transparent p-0.5">
+          <button type="submit" class="pp-btn pp-btn-primary pp-btn-sm">Add Category</button>
+        </form>
+        <div class="flex flex-wrap gap-2 pt-1">
+          ${state.categories.map((c) => `
+            <span class="inline-flex items-center gap-1.5 rounded-full border border-slate-500/20 bg-slate-500/5 px-2.5 py-1 text-xs">
+              <span class="h-2.5 w-2.5 rounded-full" style="background:${esc(c.color || '#38BDF8')}"></span>
+              <span class="font-medium">${esc(c.name)}</span>
+              <span class="text-[10px] text-slate-400">${esc(c.kind)}</span>
+              ${c.slug !== 'uncategorized' ? `<button type="button" class="ml-0.5 text-slate-400 hover:text-rose-400" data-del-cat="${c.id}" title="Delete category">&times;</button>` : ''}
+            </span>
+          `).join('')}
         </div>
       </div>
 
@@ -720,6 +784,28 @@ export async function renderSettingsView(root, onRefreshAll) {
     b.addEventListener('click', async () => {
       await api(`/api/v1/rules/${b.dataset.delRule}`, { method: 'DELETE' });
       renderSettingsView(root, onRefreshAll);
+    });
+  });
+
+  root.querySelector('#form-new-category')?.addEventListener('submit', async (e) => {
+    e.preventDefault();
+    const fd = new FormData(e.target);
+    try {
+      const res = await api('/api/v1/categories', { method: 'POST', body: Object.fromEntries(fd.entries()) });
+      showToast(res.created ? `Category "${res.category.name}" added` : `Category "${res.category.name}" already exists`);
+      if (onRefreshAll) await onRefreshAll();
+      renderSettingsView(root, onRefreshAll);
+    } catch (err) { showToast(err.message, true); }
+  });
+
+  root.querySelectorAll('[data-del-cat]').forEach((b) => {
+    b.addEventListener('click', async () => {
+      try {
+        await api(`/api/v1/categories/${b.dataset.delCat}`, { method: 'DELETE' });
+        showToast('Category deleted');
+        if (onRefreshAll) await onRefreshAll();
+        renderSettingsView(root, onRefreshAll);
+      } catch (err) { showToast(err.message, true); }
     });
   });
 

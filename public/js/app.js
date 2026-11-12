@@ -548,6 +548,31 @@ document.getElementById('btn-ai-cat').addEventListener('click', async () => {
   } catch (e) { showToast(e.message, true); }
 });
 
+document.getElementById('btn-tx-add-cat')?.addEventListener('click', () => {
+  const row = document.getElementById('tx-new-cat-row');
+  row?.classList.toggle('hidden');
+  if (!row?.classList.contains('hidden')) document.getElementById('tx-new-cat-name')?.focus();
+});
+
+document.getElementById('btn-tx-new-cat-save')?.addEventListener('click', async () => {
+  const input = document.getElementById('tx-new-cat-name');
+  const name = (input?.value || '').trim();
+  if (name.length < 2) return showToast('Enter at least 2 characters for category name', true);
+  try {
+    const txType = document.getElementById('tx-type')?.value || 'expense';
+    const kind = txType === 'income' ? 'income' : txType === 'transfer' ? 'transfer' : 'expense';
+    const res = await api('/api/v1/categories', { method: 'POST', body: { name, kind } });
+    const catRes = await api('/api/v1/categories');
+    state.categories = catRes.categories;
+    const catSel = document.getElementById('tx-category');
+    catSel.innerHTML = state.categories.map((c) => `<option value="${c.id}">${esc(c.name)}</option>`).join('');
+    if (res.category?.id) catSel.value = res.category.id;
+    input.value = '';
+    document.getElementById('tx-new-cat-row')?.classList.add('hidden');
+    showToast(res.created ? `Category "${res.category.name}" added` : `Selected "${res.category.name}"`);
+  } catch (e) { showToast(e.message, true); }
+});
+
 txForm.addEventListener('submit', async (e) => {
   e.preventDefault();
   const id = document.getElementById('tx-id').value;

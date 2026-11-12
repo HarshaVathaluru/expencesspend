@@ -267,7 +267,12 @@
         <label class="pp-label">Category
           <div class="flex gap-1.5">
             <select id="tx-category" class="pp-input"></select>
+            <button type="button" class="pp-btn-ghost pp-btn-sm shrink-0" id="btn-tx-add-cat" title="Add custom category">+</button>
             <button type="button" class="pp-btn-ghost pp-btn-sm shrink-0" id="btn-ai-cat" title="Suggest with AI">AI</button>
+          </div>
+          <div id="tx-new-cat-row" class="mt-1.5 hidden flex gap-1.5">
+            <input type="text" id="tx-new-cat-name" placeholder="New category name (e.g. Fuel, Gym)" maxlength="40" class="pp-input text-xs">
+            <button type="button" class="pp-btn pp-btn-secondary pp-btn-sm shrink-0" id="btn-tx-new-cat-save">Add</button>
           </div>
         </label>
         <label class="pp-label">Payment Method
